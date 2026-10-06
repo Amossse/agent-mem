@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-mem-kit"
+version = "0.1.0"
+description = "Scoped local memory shared through a portable Agent Skill."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [{name = "Agent Mem contributors"}]
+keywords = ["agent-skills", "agent-memory", "claude", "codex", "sqlite", "local-first"]
+
+[project.urls]
+Homepage = "https://github.com/Amossse/agent-mem"
+Issues = "https://github.com/Amossse/agent-mem/issues"
+
+[project.scripts]
+agent-mem = "agent_mem.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["agent_mem*"]
+
+[tool.setuptools.package-data]
+agent_mem = ["skills/agent-mem/SKILL.md"]
+
+[tool.ruff]
+line-length = 110
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]

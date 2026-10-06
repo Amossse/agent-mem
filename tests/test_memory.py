@@ -1,0 +1,105 @@
+"""One isolated end-to-end regression check; fictional records, no agent model."""
+
+import json
+import os
+import sqlite3
+import subprocess
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parents[1]
+SCRIPT = REPO / "agent_mem/cli.py"
+EXAMPLE = {"kind": "preference", "title": "学习卡片格式",
+           "body": "每张学习卡片只放一个问题，附一个简短例子。",
+           "source": "Fictional user confirmation", "agent": "host-a"}
+
+
+class MemoryLoop(unittest.TestCase):
+    def test_complete_local_protocol(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            store = root / "store/memory.sqlite3"
+
+            def call(*args, scope="study", value=None, error=None, script=SCRIPT):
+                command = [sys.executable, str(script), "--db", str(store), "--scope", scope, *args]
+                result = subprocess.run(command, input=json.dumps(value) if value is not None else None,
+                                        text=True, encoding="utf-8", capture_output=True,
+                                        env={**os.environ, "PYTHONIOENCODING": "cp1252"})
+                if error:
+                    self.assertEqual(result.returncode, 2, result.stdout)
+                    self.assertIn(error, json.loads(result.stderr)["error"])
+                    return result.stderr
+                self.assertEqual(result.returncode, 0, result.stderr)
+                return json.loads(result.stdout)
+
+            call("add", "--input", "-", value=EXAMPLE, error="scope_not_approved")
+            call("grant", "--decision", "approve")  # Simulated human approval, not a model decision.
+            saved = call("add", "--input", "-", value=EXAMPLE)
+            identifier = saved["id"]
+            self.assertEqual(saved["revision"], 1)
+            hits = call("search", "学习 卡片")["items"]
+            self.assertEqual(hits[0]["id"], identifier)
+            self.assertNotIn("body", hits[0])
+            self.assertEqual(call("search", "学习", scope="other")["items"], [])
+            call("get", identifier, scope="other", error="memory_not_found")
+            retrieved = call("get", identifier)
+            self.assertEqual(retrieved["body"], EXAMPLE["body"])
+            revised = {**EXAMPLE, "agent": "host-b", "body": "每张卡片一个问题，加一条例子和来源。"}
+            self.assertEqual(call("update", identifier, "--revision", "1", "--input", "-",
+                                  value=revised)["revision"], 2)
+            call("update", identifier, "--revision", "1", "--input", "-",
+                 value=EXAMPLE, error="revision_conflict")
+            self.assertEqual(call("get", identifier)["body"], revised["body"])
+            self.assertEqual(call("export")["items"][0]["agent"], "host-b")
+            self.assertEqual(call("search", "%")["items"], [])
+            call("search", "x", "--limit", "100", error="invalid_search_bounds")
+            call("add", "--input", "-", value={**EXAMPLE, "grant": "approve"}, error="invalid_record_fields")
+            call("add", "--input", "-", value={**EXAMPLE, "expires_at": "tomorrow"}, error="invalid_expiry")
+            call("add", "--input", "-", value={**EXAMPLE, "body": "\ud800"}, error="invalid_text_encoding")
+            private = "sk-" + "a" * 24
+            message = call("add", "--input", "-", value={**EXAMPLE, "body": private}, error="privacy_check_failed")
+            self.assertNotIn(private, message)
+            call("add", "--input", "-", value={**EXAMPLE, "body": "C:\\Users\\private-user\\notes"},
+                 error="privacy_check_failed")
+            expired = call("add", "--input", "-", value={**EXAMPLE, "expires_at": "2000-01-01T00:00:00Z"})
+            call("get", expired["id"], error="memory_not_found_or_expired")
+            self.assertEqual(len(call("export")["items"]), 1)
+            call("grant", "--decision", "pause")
+            call("add", "--input", "-", value=EXAMPLE, error="scope_not_approved")
+            call("forget", identifier, "--revision", "1", error="revision_conflict")
+            call("forget", identifier, "--revision", "2")
+            self.assertEqual(call("search")["items"], [])
+            self.assertEqual(call("status")["active"], 0)
+            self.assertNotIn(revised["body"].encode(), store.read_bytes())
+
+            # Both host adapters use the same standalone protocol against the same store.
+            call("install", "--workspace", str(root), "--agent", "all")
+            call("install", "--workspace", str(root), "--agent", "all")
+            for host in (".agents", ".claude"):
+                standalone = root / host / "skills/agent-mem/scripts/mem.py"
+                self.assertEqual(call("status", script=standalone)["decision"], "pause")
+            controller = root / ".agents/skills/agent-mem/SKILL.md"
+            controller.write_text("manual edits", encoding="utf-8")
+            call("install", "--workspace", str(root), "--agent", "codex", error="existing_skill_conflict")
+            self.assertEqual(controller.read_text(), "manual edits")
+            unknown = root / "unrelated.sqlite3"
+            with sqlite3.connect(unknown) as db:
+                db.execute("CREATE TABLE unrelated (value TEXT)")
+            result = subprocess.run([sys.executable, str(SCRIPT), "--db", str(unknown), "status"],
+                                    capture_output=True, text=True)
+            self.assertEqual(result.returncode, 2)
+            self.assertIn("unrecognized_database", result.stderr)
+            try:
+                (root / "link").symlink_to(root / "store", target_is_directory=True)
+            except OSError:
+                pass  # Windows without symlink permission; other checks still run.
+            else:
+                result = subprocess.run([sys.executable, str(SCRIPT), "--db", str(root / "link/m.sqlite3"),
+                                         "status"], capture_output=True, text=True)
+                self.assertIn("symlink_not_allowed", result.stderr)
+
+
+if __name__ == "__main__":
+    unittest.main()

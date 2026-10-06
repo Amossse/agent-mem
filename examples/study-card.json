@@ -1,0 +1,7 @@
+{
+  "kind": "preference",
+  "title": "Concise study cards",
+  "body": "Use one question per card and include a short example.",
+  "source": "Fictional user explicitly confirmed this preference.",
+  "agent": "generic"
+}
