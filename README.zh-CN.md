@@ -56,6 +56,8 @@ agent-mem --scope study export
 
 提供 Codex 的 `.agents/skills`、Claude Code 的 `.claude/skills` 安装适配。其他兼容宿主可用 `install --skill-dir <目录>/agent-mem` 安装自包含 Skill 和 Python 脚本。
 
+也可直接把源码中的 `agent_mem/skills/agent-mem` 整个文件夹复制到宿主规定的 Skill 目录，运行自带的 `scripts/mem.py`，无需安装 Python 包。
+
 “通用”指能读取 Agent Skills、访问本地文件并执行 Python 的宿主。纯网页聊天不支持，不能声称已适配所有 Agent。
 
 处理路径为“宿主 Skill → Python CLI → SQLite 事务 → JSON 结果”。宿主负责提炼内容，CLI 不调用模型、不扫描聊天历史。检索先返回 ID 和标题，再读取选中的完整记录；采用支持中文的字面匹配和时间排序，没有向量检索。

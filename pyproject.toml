@@ -23,7 +23,7 @@ agent-mem = "agent_mem.cli:main"
 include = ["agent_mem*"]
 
 [tool.setuptools.package-data]
-agent_mem = ["skills/agent-mem/SKILL.md"]
+agent_mem = ["skills/agent-mem/SKILL.md", "skills/agent-mem/scripts/*.py"]
 
 [tool.ruff]
 line-length = 110

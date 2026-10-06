@@ -72,6 +72,8 @@ class MemoryLoop(unittest.TestCase):
             call("forget", identifier, "--revision", "2")
             self.assertEqual(call("search")["items"], [])
             self.assertEqual(call("status")["active"], 0)
+            self.assertEqual(call("status", script=REPO / "agent_mem/skills/agent-mem/scripts/mem.py")
+                             ["decision"], "pause")
             self.assertNotIn(revised["body"].encode(), store.read_bytes())
 
             # Both host adapters use the same standalone protocol against the same store.

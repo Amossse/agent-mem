@@ -49,6 +49,8 @@ Skill installation alone does not guarantee automatic invocation or session-star
 
 The protocol is host-neutral; **not every agent is supported or live-tested**. Arbitrary Skill readers
 that can execute Python may use the same script. No agent name is treated as authenticated identity.
+The source folder `agent_mem/skills/agent-mem` is self-contained too: copy that entire folder to a
+host's documented skill root and invoke its bundled `scripts/mem.py` without installing the Python package.
 
 ## Runnable fictional example
 
