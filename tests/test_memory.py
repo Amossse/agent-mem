@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from contextlib import closing
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -87,7 +88,7 @@ class MemoryLoop(unittest.TestCase):
             call("install", "--workspace", str(root), "--agent", "codex", error="existing_skill_conflict")
             self.assertEqual(controller.read_text(), "manual edits")
             unknown = root / "unrelated.sqlite3"
-            with sqlite3.connect(unknown) as db:
+            with closing(sqlite3.connect(unknown)) as db:
                 db.execute("CREATE TABLE unrelated (value TEXT)")
             result = subprocess.run([sys.executable, str(SCRIPT), "--db", str(unknown), "status"],
                                     capture_output=True, text=True)
