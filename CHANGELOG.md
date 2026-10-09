@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0 — 2026-10-09
+
+- Three-layer recall: compact search, same-scope last-update timeline, selected full records.
+- Bounded context with complete provenance, untrusted-data warning, omitted IDs and more-match flag.
+- Consistent read snapshots; no database migration, new runtime dependencies or automatic capture.
+- Fictional regression coverage for budgets, time ties, scope/expiry, corrections and installed scripts.
+- Updated portable Skill and bilingual usage/upgrade instructions. Existing 0.1.0 tag is unchanged.
+
 ## 0.1.0 — 2026-10-06
 
 - Portable Agent Mem Skill and standalone local CLI; Codex/Claude/generic/custom-directory installers.

@@ -83,6 +83,7 @@ class MemoryLoop(unittest.TestCase):
             for host in (".agents", ".claude"):
                 standalone = root / host / "skills/agent-mem/scripts/mem.py"
                 self.assertEqual(call("status", script=standalone)["decision"], "pause")
+                self.assertEqual(call("context", "study", script=standalone)["ids"], [])
             controller = root / ".agents/skills/agent-mem/SKILL.md"
             controller.write_text("manual edits", encoding="utf-8")
             call("install", "--workspace", str(root), "--agent", "codex", error="existing_skill_conflict")

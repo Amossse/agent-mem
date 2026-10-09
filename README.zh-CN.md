@@ -9,17 +9,19 @@
 需要 Python 3.10+。运行时没有第三方依赖，不需要 API Key、后台服务或额外模型。通过 GitHub 安装，未发布到 PyPI：
 
 ```sh
-uv tool install --python 3.11 git+https://github.com/Amossse/agent-mem.git@v0.1.0
+uv tool install --python 3.11 git+https://github.com/Amossse/agent-mem.git@main
 cd your-project
 agent-mem install --agent all
 ```
 
-也可用 `pipx install git+https://github.com/Amossse/agent-mem.git@v0.1.0`。
+也可用 `pipx install git+https://github.com/Amossse/agent-mem.git@main`。`main` 包含 0.2.0 升级，既有 `v0.1.0` 标签保持不变。
 安装后，新开 Codex 或 Claude Code 会话，调用 `$agent-mem` 或 `/agent-mem`，例如：
 
 > 记住我的学习卡片每张只放一个问题，附一个简短例子。使用当前项目的本地记忆库，命名空间为 study；开启持续写入前先问我。
 
 确认授权后，Agent 应保存简短记忆并返回 ID。换一个兼容 Agent，指定同一个数据库和命名空间即可查询。安装 Skill 不保证自动调用，也不会自动修改宿主的启动规则。
+
+升级时，先升级 Python 包，再把旧项目里的 Skill 文件夹移到安装目录之外备份，重新执行安装。自定义修改应核对后再恢复。安装器仍会拒绝不同的既有文件，避免覆盖手工修改。已有 schema-v1 记忆库无需迁移，不要移动或删除数据库。
 
 ## 最小可运行示例
 
@@ -42,6 +44,8 @@ agent-mem --scope study search "study cards"
 ```sh
 agent-mem --scope study status
 agent-mem --scope study get <id>
+agent-mem --scope study timeline <id> --before 3 --after 3
+agent-mem --scope study context "study cards" --limit 5 --max-chars 4000
 agent-mem --scope study update <id> --revision 1 --input examples/study-card.json
 agent-mem --scope study grant --decision pause
 agent-mem --scope study forget <id> --revision 2
@@ -50,7 +54,15 @@ agent-mem --scope study export
 
 更新和遗忘必须提供刚读到的版本，旧版本会报冲突，不覆盖新内容。暂停后禁止添加和更新，仍可按人的要求遗忘某条记忆。遗忘会删除数据库中的该行，但不能清除备份、导出或系统快照中的副本。
 
-输入可带时区明确的 `expires_at`，过期记忆不会被检索，但仍保留在数据库中。首版不提供历史回退、导入或自动清理。[完整输入格式](agent_mem/skills/agent-mem/SKILL.md)
+输入可带时区明确的 `expires_at`，过期记忆不会被检索，但仍保留在数据库中。不提供历史回退、导入或自动清理。[完整输入格式](agent_mem/skills/agent-mem/SKILL.md)
+
+## 分层检索与上下文
+
+先用 `search` 查标题和 ID，用 `timeline <id>` 查看同一命名空间内附近的简短记录，再用 `get` 读取需要的正文。时间线按最近修改时间排序，同一时刻按 ID 排序，默认前后各 3 条，每侧允许 0 至 20 条。修改会改变记录的位置；时间线不表示执行轨迹、会话归属、因果关系或历史版本。
+
+`context "关键词"` 可直接生成供宿主读取的小份上下文，默认检查 5 条候选，限制 4000 个 Unicode 字符。最多检查 20 条，字符上限允许 256 至 32000。限制只作用于输出中的 `context` 字符串，不是整个 JSON 输出、字节数或模型 Token 数。
+
+上下文包含不可信数据提醒，以及保留 ID、来源、版本和过期时间的完整 JSON 记录。放不下的记录整条跳过，通过 `omitted_ids` 告知；后面的较小记录仍可能放入。`has_more` 表示候选上限之外还有匹配项。不要把空结果误当作没有记忆，必要时按 ID 单独读取。检索使用同一个数据库读快照，避免并发修改导致版本混杂。CLI 不摘要、不调用模型，也不自动注入上下文。
 
 ## 兼容范围与实现
 
@@ -60,7 +72,7 @@ agent-mem --scope study export
 
 “通用”指能读取 Agent Skills、访问本地文件并执行 Python 的宿主。纯网页聊天不支持，不能声称已适配所有 Agent。
 
-处理路径为“宿主 Skill → Python CLI → SQLite 事务 → JSON 结果”。宿主负责提炼内容，CLI 不调用模型、不扫描聊天历史。检索先返回 ID 和标题，再读取选中的完整记录；采用支持中文的字面匹配和时间排序，没有向量检索。
+处理路径为“宿主 Skill → Python CLI → SQLite 事务 → JSON 结果”。宿主负责提炼内容，CLI 不调用模型、不扫描聊天历史。采用支持中文的字面匹配和时间排序，没有向量检索。
 
 ## 安全与验证边界
 

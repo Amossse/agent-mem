@@ -24,7 +24,10 @@ Forgetting deletes the exact database row with SQLite secure deletion enabled. T
 forensic erasure: snapshots, exported files, backups, underlying storage and provider-held copies can remain.
 Expired records are hidden, not erased. This release has no built-in historical snapshots or rollback.
 
-Exports contain memory contents. Review before sending or publishing; a CLI export does not authorize
+Exports and context contain memory contents, including source labels. Context's warning is a host
+instruction reminder, not a prompt-injection defense. Its character budget is not a provider token limit.
+Timeline can reveal nearby unrelated topics within the agreed namespace; neighbors do not prove causality.
+Review before sending or publishing; CLI retrieval does not authorize
 sharing. Add `.agent-mem/` to a consuming project's Git ignore rules; ignores are not access controls.
 Never publish raw diagnostics or private stores. Report vulnerabilities via GitHub private reporting
 if available; otherwise open only a sanitized issue requesting a private channel.

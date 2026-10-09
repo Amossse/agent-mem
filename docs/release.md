@@ -1,4 +1,23 @@
-# Agent Mem v0.1.0
+# Agent Mem 0.2.0 upgrade
+
+Independent implementation inspired by claude-mem's progressive retrieval: compact search, nearby
+last-update timeline and selected complete memories. The new context command preserves provenance
+within a Unicode-character budget, with explicit omissions and an untrusted-data warning.
+
+Install the updated code from `main` (no 0.2.0 release tag is implied):
+
+```sh
+uv tool install --python 3.11 git+https://github.com/Amossse/agent-mem.git@main
+```
+
+To replace an older tag-pinned tool installation, use
+`uv tool install --force --python 3.11 git+https://github.com/Amossse/agent-mem.git@main`
+or `pipx install --force git+https://github.com/Amossse/agent-mem.git@main`.
+Move old project Skill folders to a backup outside the destination before reinstalling; custom edits
+are never overwritten. Existing schema-v1 stores remain compatible. No new runtime dependencies,
+automatic capture, model calls or session-start hooks. See README for limits and validation boundaries.
+
+## Earlier v0.1.0 release
 
 Portable local memory shared by compatible Agent Skills hosts.
 
