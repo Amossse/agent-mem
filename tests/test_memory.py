@@ -18,6 +18,19 @@ EXAMPLE = {"kind": "preference", "title": "学习卡片格式",
 
 
 class MemoryLoop(unittest.TestCase):
+    def test_duplicate_json_fields_never_write_memory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = Path(directory).resolve() / "memory.sqlite3"
+            command = [sys.executable, str(SCRIPT), "--db", str(store), "--scope", "study"]
+            subprocess.run(command + ["grant", "--decision", "approve"], check=True, capture_output=True)
+            raw = json.dumps(EXAMPLE)[:-1] + ',"body":"fictional replacement"}'
+            result = subprocess.run(command + ["add", "--input", "-"], input=raw,
+                                    text=True, encoding="utf-8", capture_output=True)
+            self.assertEqual(result.returncode, 2)
+            self.assertNotIn("fictional replacement", result.stderr)
+            with closing(sqlite3.connect(store)) as db:
+                self.assertEqual(db.execute("SELECT COUNT(*) FROM memories").fetchone()[0], 0)
+
     def test_complete_local_protocol(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()

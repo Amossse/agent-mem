@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Reject duplicate JSON fields in memory inputs instead of silently keeping the last value; invalid cards never reach storage.
+- Add a CLI regression proving rejection leaves the approved memory store unchanged.
+
 ## 0.2.0 — 2026-10-09
 
 - Three-layer recall: compact search, same-scope last-update timeline, selected full records.

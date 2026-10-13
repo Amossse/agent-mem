@@ -134,7 +134,7 @@ agent-mem --db /absolute/path/to/shared-memory.sqlite3 --scope study search "car
 
 Exact input schema, commands and consent rules live in the [Skill](agent_mem/skills/agent-mem/SKILL.md).
 JSON inputs are limited to 256 KB; text sizes, types, timestamps, query sizes and result counts are bounded.
-Unknown fields are rejected. Diagnostics do not echo raw input. SQL values are parameterized.
+Unknown and duplicate JSON fields are rejected. Diagnostics do not echo raw input. SQL values are parameterized.
 Installer conflicts are refused, not overwritten. DB initialization rejects existing unrelated SQLite files.
 Managed paths reject symlink components; use a physical path, not a symlink alias. These checks are not
 an OS sandbox or protection against a hostile local process racing filesystem operations.

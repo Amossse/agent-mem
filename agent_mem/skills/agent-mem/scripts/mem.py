@@ -111,6 +111,15 @@ def record(value):
     return result
 
 
+def unique_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate JSON field")
+        result[key] = value
+    return result
+
+
 def load(path):
     if path == "-":
         data = sys.stdin.buffer.read(LIMIT + 1)
@@ -120,7 +129,7 @@ def load(path):
     if len(data) > LIMIT:
         raise Error("input_too_large")
     try:
-        return record(json.loads(data))
+        return record(json.loads(data, object_pairs_hook=unique_object))
     except (ValueError, UnicodeError, RecursionError):
         raise Error("invalid_json") from None
 
