@@ -157,6 +157,8 @@ other projects should add `.agent-mem/` to their `.gitignore` before using memor
 
 ## Validation
 
+Regression coverage includes rejected updates preserving the complete record and revision; these are fictional CLI checks, not live-model validation.
+
 The runnable check uses separate CLI processes and fictional records. It exercises consent, cross-host
 standalone scripts, Chinese search, namespace isolation, update conflicts, expiry, export, forgetting
 while paused, privacy rejection, invalid schema, installer conflicts, unknown DB rejection and symlinks.

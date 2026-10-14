@@ -18,6 +18,28 @@ EXAMPLE = {"kind": "preference", "title": "学习卡片格式",
 
 
 class MemoryLoop(unittest.TestCase):
+    def test_rejected_update_preserves_record_and_revision(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            command = [sys.executable, str(SCRIPT), "--db", str(root / "memory.sqlite3"), "--scope", "study"]
+            subprocess.run(command + ["grant", "--decision", "approve"], check=True, capture_output=True)
+            created = subprocess.run(command + ["add", "--input", "-"], input=json.dumps(EXAMPLE),
+                                     capture_output=True, text=True, encoding="utf-8", check=True)
+            identifier = json.loads(created.stdout)["id"]
+            original = subprocess.run(command + ["get", identifier], capture_output=True, check=True).stdout
+            source = root / "candidate.json"
+            private = "sk-" + "z" * 24
+            for raw in ("{broken", json.dumps({**EXAMPLE, "body": private}),
+                        json.dumps({**EXAMPLE, "unknown": 1})):
+                with self.subTest(case=raw == "{broken"):
+                    source.write_text(raw, encoding="utf-8")
+                    result = subprocess.run(command + ["update", identifier, "--revision", "1", "--input", str(source)],
+                                            capture_output=True)
+                    self.assertEqual(result.returncode, 2)
+                    self.assertNotIn(private.encode(), result.stderr)
+                    self.assertEqual(subprocess.run(command + ["get", identifier], capture_output=True,
+                                                    check=True).stdout, original)
+
     def test_duplicate_json_fields_never_write_memory(self):
         with tempfile.TemporaryDirectory() as directory:
             store = Path(directory).resolve() / "memory.sqlite3"

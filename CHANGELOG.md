@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a subprocess regression proving malformed, privacy-rejected and unknown-field updates preserve the complete original record and revision. Runtime behavior is unchanged.
+
 - Reject duplicate JSON fields in memory inputs instead of silently keeping the last value; invalid cards never reach storage.
 - Add a CLI regression proving rejection leaves the approved memory store unchanged.
 
