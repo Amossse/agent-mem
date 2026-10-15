@@ -18,6 +18,27 @@ EXAMPLE = {"kind": "preference", "title": "学习卡片格式",
 
 
 class MemoryLoop(unittest.TestCase):
+    def test_other_approved_scope_cannot_update_or_forget_a_memory(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = Path(directory).resolve() / "memory.sqlite3"
+            base = [sys.executable, str(SCRIPT), "--db", str(store)]
+            owner = base + ["--scope", "study"]
+            other = base + ["--scope", "other"]
+            for command in (owner, other):
+                subprocess.run(command + ["grant", "--decision", "approve"], capture_output=True, check=True)
+            created = subprocess.run(owner + ["add", "--input", "-"], input=json.dumps(EXAMPLE),
+                                     capture_output=True, text=True, encoding="utf-8", check=True)
+            identifier = json.loads(created.stdout)["id"]
+            original = subprocess.run(owner + ["get", identifier], capture_output=True, check=True).stdout
+            for mutation in (["update", identifier, "--revision", "1", "--input", "-"],
+                             ["forget", identifier, "--revision", "1"]):
+                result = subprocess.run(other + mutation, input=json.dumps(EXAMPLE),
+                                        capture_output=True, text=True, encoding="utf-8")
+                self.assertEqual(result.returncode, 2)
+                self.assertIn("memory_not_found", result.stderr)
+                self.assertEqual(subprocess.run(owner + ["get", identifier], capture_output=True,
+                                                check=True).stdout, original)
+
     def test_rejected_update_preserves_record_and_revision(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()

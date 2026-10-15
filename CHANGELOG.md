@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Cover cross-scope update and forget attempts even when both scopes have write approval; the owner record and revision stay unchanged. Runtime behavior is unchanged.
+
 - Add a subprocess regression proving malformed, privacy-rejected and unknown-field updates preserve the complete original record and revision. Runtime behavior is unchanged.
 
 - Reject duplicate JSON fields in memory inputs instead of silently keeping the last value; invalid cards never reach storage.
