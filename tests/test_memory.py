@@ -7,6 +7,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
 from pathlib import Path
 
@@ -18,6 +19,31 @@ EXAMPLE = {"kind": "preference", "title": "学习卡片格式",
 
 
 class MemoryLoop(unittest.TestCase):
+    def test_competing_processes_cannot_both_apply_the_same_revision(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = Path(directory).resolve() / "memory.sqlite3"
+            command = [sys.executable, str(SCRIPT), "--db", str(store), "--scope", "study"]
+            subprocess.run(command + ["grant", "--decision", "approve"], capture_output=True, check=True)
+            created = subprocess.run(command + ["add", "--input", "-"], input=json.dumps(EXAMPLE),
+                                     capture_output=True, text=True, encoding="utf-8", check=True)
+            identifier = json.loads(created.stdout)["id"]
+            candidates = [{**EXAMPLE, "body": f"Fictional competing correction {index}."} for index in range(2)]
+
+            def update(candidate):
+                return subprocess.run(command + ["update", identifier, "--revision", "1", "--input", "-"],
+                                      input=json.dumps(candidate), capture_output=True, text=True, encoding="utf-8")
+
+            with ThreadPoolExecutor(max_workers=2) as workers:
+                results = list(workers.map(update, candidates))
+            self.assertEqual(sorted(result.returncode for result in results), [0, 2])
+            winner = next(index for index, result in enumerate(results) if result.returncode == 0)
+            self.assertIn("revision_conflict", results[1 - winner].stderr)
+            current = subprocess.run(command + ["get", identifier], capture_output=True,
+                                     text=True, encoding="utf-8", check=True)
+            record = json.loads(current.stdout)
+            self.assertEqual(record["revision"], 2)
+            self.assertEqual(record["body"], candidates[winner]["body"])
+
     def test_other_approved_scope_cannot_update_or_forget_a_memory(self):
         with tempfile.TemporaryDirectory() as directory:
             store = Path(directory).resolve() / "memory.sqlite3"

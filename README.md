@@ -181,6 +181,7 @@ drop-in replacement, or an import tool for claude-mem stores. Do not point this 
 Open [issues](https://github.com/Amossse/agent-mem/issues) or a PR with sanitized reproduction steps.
 Run `python -m unittest discover -s tests -v`, `python -m compileall -q agent_mem tests`, and `ruff check .`.
 Mutation isolation tests attempt update and forget from a different approved scope and verify the owner's complete record and revision remain unchanged.
+The competing-writer regression runs two independent CLI processes against the same revision, then checks that only one succeeds and its content is retained.
 See [contributing](CONTRIBUTING.md), [changelog](CHANGELOG.md), [license](LICENSE) and
 [launch drafts](docs/launch.md). Generated memories have no automatic license assignment.
 

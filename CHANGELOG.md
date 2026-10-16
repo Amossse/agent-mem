@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a two-process revision-conflict regression: exactly one competing correction succeeds, and the stored body matches the winning revision. Runtime behavior is unchanged.
+
 - Cover cross-scope update and forget attempts even when both scopes have write approval; the owner record and revision stay unchanged. Runtime behavior is unchanged.
 
 - Add a subprocess regression proving malformed, privacy-rejected and unknown-field updates preserve the complete original record and revision. Runtime behavior is unchanged.
