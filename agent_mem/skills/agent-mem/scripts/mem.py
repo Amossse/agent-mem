@@ -240,15 +240,17 @@ def install(workspace, agent, custom=None):
                     [root / roots[a] / "agent-mem" for a in (["codex", "claude"] if agent == "all" else [agent])])
     source = Path(__file__).parent.parent / "SKILL.md"
     files = {"SKILL.md": source.read_bytes(), "scripts/mem.py": Path(__file__).read_bytes()}
-    results = []
+    destinations = [safe_path(target) for target in destinations]
+    # Refuse known conflicts across all hosts before creating any installation.
     for target in destinations:
-        target = safe_path(target)
         if target.exists():
             actual = {str(p.relative_to(target)).replace(os.sep, "/"): p.read_bytes()
                       for p in target.rglob("*") if p.is_file() and not p.is_symlink()}
             if any(p.is_symlink() for p in target.rglob("*")) or actual != files:
                 raise Error("existing_skill_conflict")
-        else:
+    results = []
+    for target in destinations:
+        if not target.exists():
             target.parent.mkdir(parents=True, exist_ok=True)
             with tempfile.TemporaryDirectory(dir=target.parent, prefix=".agent-mem-install-") as temp:
                 stage = Path(temp) / "agent-mem"

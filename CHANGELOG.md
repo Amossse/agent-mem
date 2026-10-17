@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Preflight every selected host before installation, so a known conflict in a later host does not leave a newly installed earlier copy. This is not rollback for later I/O failures.
+
 - Add a two-process revision-conflict regression: exactly one competing correction succeeds, and the stored body matches the winning revision. Runtime behavior is unchanged.
 
 - Cover cross-scope update and forget attempts even when both scopes have write approval; the owner record and revision stay unchanged. Runtime behavior is unchanged.

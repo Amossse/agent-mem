@@ -19,6 +19,19 @@ EXAMPLE = {"kind": "preference", "title": "学习卡片格式",
 
 
 class MemoryLoop(unittest.TestCase):
+    def test_all_host_install_preflights_conflicts_before_creating_any_copy(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            manual = root / ".claude/skills/agent-mem/SKILL.md"
+            manual.parent.mkdir(parents=True)
+            manual.write_text("Fictional manually maintained skill", encoding="utf-8")
+            result = subprocess.run([sys.executable, str(SCRIPT), "install", "--workspace", str(root),
+                                     "--agent", "all"], capture_output=True)
+            self.assertEqual(result.returncode, 2)
+            self.assertIn(b"existing_skill_conflict", result.stderr)
+            self.assertFalse((root / ".agents/skills/agent-mem").exists())
+            self.assertEqual(manual.read_text(encoding="utf-8"), "Fictional manually maintained skill")
+
     def test_competing_processes_cannot_both_apply_the_same_revision(self):
         with tempfile.TemporaryDirectory() as directory:
             store = Path(directory).resolve() / "memory.sqlite3"
