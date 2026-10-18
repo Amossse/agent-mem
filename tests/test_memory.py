@@ -37,14 +37,14 @@ class MemoryLoop(unittest.TestCase):
             with patch.object(Path, "write_bytes", interrupted), self.assertRaises(OSError):
                 install(root, "all")
             first = root / ".agents/skills/agent-mem"
-            original = {str(p.relative_to(first)): p.read_bytes() for p in first.rglob("*") if p.is_file()}
+            original = {p.relative_to(first).as_posix(): p.read_bytes() for p in first.rglob("*") if p.is_file()}
             self.assertEqual(set(original), {"SKILL.md", "scripts/mem.py"})
             self.assertFalse((root / ".claude/skills/agent-mem").exists())
             self.assertFalse(list((root / ".claude/skills").glob(".agent-mem-install-*")))
             install(root, "all")
             for host in (".agents", ".claude"):
                 target = root / host / "skills/agent-mem"
-                self.assertEqual({str(p.relative_to(target)): p.read_bytes()
+                self.assertEqual({p.relative_to(target).as_posix(): p.read_bytes()
                                   for p in target.rglob("*") if p.is_file()}, original)
             self.assertEqual(note.read_text(encoding="utf-8"), "Fictional workspace note")
 
