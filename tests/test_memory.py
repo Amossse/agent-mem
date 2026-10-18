@@ -2,6 +2,7 @@
 
 import json
 import os
+import runpy
 import sqlite3
 import subprocess
 import sys
@@ -10,6 +11,7 @@ import unittest
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
 from pathlib import Path
+from unittest.mock import patch
 
 REPO = Path(__file__).resolve().parents[1]
 SCRIPT = REPO / "agent_mem/cli.py"
@@ -19,6 +21,33 @@ EXAMPLE = {"kind": "preference", "title": "学习卡片格式",
 
 
 class MemoryLoop(unittest.TestCase):
+    def test_interrupted_second_host_install_can_be_retried_without_removing_first(self):
+        install = runpy.run_path(str(REPO / "agent_mem/skills/agent-mem/scripts/mem.py"))["install"]
+        write = Path.write_bytes
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            note = root / "notes.txt"
+            note.write_text("Fictional workspace note", encoding="utf-8")
+
+            def interrupted(destination, data):
+                if ".claude" in destination.parts and destination.name == "mem.py":
+                    raise OSError("fictional second-host write interruption")
+                return write(destination, data)
+
+            with patch.object(Path, "write_bytes", interrupted), self.assertRaises(OSError):
+                install(root, "all")
+            first = root / ".agents/skills/agent-mem"
+            original = {str(p.relative_to(first)): p.read_bytes() for p in first.rglob("*") if p.is_file()}
+            self.assertEqual(set(original), {"SKILL.md", "scripts/mem.py"})
+            self.assertFalse((root / ".claude/skills/agent-mem").exists())
+            self.assertFalse(list((root / ".claude/skills").glob(".agent-mem-install-*")))
+            install(root, "all")
+            for host in (".agents", ".claude"):
+                target = root / host / "skills/agent-mem"
+                self.assertEqual({str(p.relative_to(target)): p.read_bytes()
+                                  for p in target.rglob("*") if p.is_file()}, original)
+            self.assertEqual(note.read_text(encoding="utf-8"), "Fictional workspace note")
+
     def test_all_host_install_preflights_conflicts_before_creating_any_copy(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()

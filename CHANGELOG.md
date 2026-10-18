@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fault-inject a second-host installation write failure and verify staging cleanup, preservation of the first installed copy and an idempotent retry. Runtime behavior is unchanged; this is not automatic rollback.
+
 - Preflight every selected host before installation, so a known conflict in a later host does not leave a newly installed earlier copy. This is not rollback for later I/O failures.
 
 - Add a two-process revision-conflict regression: exactly one competing correction succeeds, and the stored body matches the winning revision. Runtime behavior is unchanged.

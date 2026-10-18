@@ -183,6 +183,8 @@ Run `python -m unittest discover -s tests -v`, `python -m compileall -q agent_me
 Mutation isolation tests attempt update and forget from a different approved scope and verify the owner's complete record and revision remain unchanged.
 The competing-writer regression runs two independent CLI processes against the same revision, then checks that only one succeeds and its content is retained.
 Multi-host installation checks all selected destinations for existing conflicts before creating copies. Later I/O failures can still leave a partial install; inspect reported errors before retrying, without deleting manually maintained skills.
+
+A fault-injection regression covers an interrupted second-host script write: temporary staging is cleaned, the completed first copy remains intact, and retrying the unchanged installer completes both copies without changing unrelated workspace notes. This is a tested interruption point, not a guarantee of recovery from every filesystem or process failure.
 See [contributing](CONTRIBUTING.md), [changelog](CHANGELOG.md), [license](LICENSE) and
 [launch drafts](docs/launch.md). Generated memories have no automatic license assignment.
 

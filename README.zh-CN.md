@@ -91,6 +91,8 @@ CLI 不联网、不发送遥测、不自动发布记忆。宿主模型仍可能�
 
 运行 `python -m unittest discover -s tests -v` 可验证独立进程之间的读写、中文检索、授权、版本冲突和隐私边界。CI 覆盖 Linux、macOS、Windows，实际结果见 [Actions](https://github.com/Amossse/agent-mem/actions)。示例为虚构数据；真实模型驱动的宿主行为和自动触发尚未验证，也未测量效果提升。
 
+安装回归新增了第二个宿主写入脚本时中断的虚构场景，核对暂存目录清理、第一个副本保留，以及重试后两个副本一致且无关笔记未变。运行时代码未改；这不等于自动回滚，也不保证所有文件系统或进程故障都能恢复。
+
 ## 参考与贡献
 
 参考了 [claude-mem](https://github.com/thedotmack/claude-mem) 的持久上下文和分层检索思路，代码独立编写。claude-mem 已有多宿主能力；本项目侧重轻量、本地、Skill 协议，不提供其自动采集、后台服务、云端或向量能力，也不直接读取它的数据库。
