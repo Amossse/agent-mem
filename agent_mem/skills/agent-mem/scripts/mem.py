@@ -129,7 +129,7 @@ def load(path):
     if len(data) > LIMIT:
         raise Error("input_too_large")
     try:
-        return record(json.loads(data, object_pairs_hook=unique_object))
+        return record(json.loads(data.decode("utf-8-sig"), object_pairs_hook=unique_object))
     except (ValueError, UnicodeError, RecursionError):
         raise Error("invalid_json") from None
 

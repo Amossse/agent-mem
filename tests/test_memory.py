@@ -21,6 +21,25 @@ EXAMPLE = {"kind": "preference", "title": "学习卡片格式",
 
 
 class MemoryLoop(unittest.TestCase):
+    def test_non_utf8_json_is_rejected_before_creating_a_store(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            source = root / "fictional-card.json"
+            raw = json.dumps(EXAMPLE, ensure_ascii=False)
+            for encoding in ("utf-16", "utf-32"):
+                store = root / f"{encoding}.sqlite3"
+                source.write_bytes(raw.encode(encoding))
+                result = subprocess.run([sys.executable, str(SCRIPT), "--db", str(store),
+                                         "add", "--input", str(source)], capture_output=True)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn(b"invalid_json", result.stderr)
+                self.assertFalse(store.exists())
+            command = [sys.executable, str(SCRIPT), "--db", str(root / "valid.sqlite3")]
+            subprocess.run(command + ["grant", "--decision", "approve"], capture_output=True, check=True)
+            for encoding in ("utf-8", "utf-8-sig"):
+                source.write_bytes(raw.encode(encoding))
+                subprocess.run(command + ["add", "--input", str(source)], capture_output=True, check=True)
+
     def test_interrupted_second_host_install_can_be_retried_without_removing_first(self):
         install = runpy.run_path(str(REPO / "agent_mem/skills/agent-mem/scripts/mem.py"))["install"]
         write = Path.write_bytes
