@@ -21,6 +21,34 @@ EXAMPLE = {"kind": "preference", "title": "学习卡片格式",
 
 
 class MemoryLoop(unittest.TestCase):
+    def test_expired_memory_can_be_forgotten_while_writes_are_paused(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = Path(directory).resolve() / "memory.sqlite3"
+            command = [sys.executable, str(SCRIPT), "--db", str(store), "--scope", "study"]
+            subprocess.run(command + ["grant", "--decision", "approve"], capture_output=True, check=True)
+            retained = subprocess.run(command + ["add", "--input", "-"], input=json.dumps(EXAMPLE),
+                                      text=True, encoding="utf-8", capture_output=True, check=True)
+            retained_id = json.loads(retained.stdout)["id"]
+            original = subprocess.run(command + ["get", retained_id], capture_output=True, check=True).stdout
+            created = subprocess.run(command + ["add", "--input", "-"],
+                                     input=json.dumps({**EXAMPLE, "expires_at": "2000-01-01T00:00:00Z"}),
+                                     text=True, encoding="utf-8", capture_output=True, check=True)
+            identifier = json.loads(created.stdout)["id"]
+            subprocess.run(command + ["grant", "--decision", "pause"], capture_output=True, check=True)
+            hidden = subprocess.run(command + ["get", identifier], capture_output=True)
+            self.assertEqual(hidden.returncode, 2)
+            self.assertIn(b"memory_not_found_or_expired", hidden.stderr)
+            stale = subprocess.run(command + ["forget", identifier, "--revision", "2"], capture_output=True)
+            self.assertEqual(stale.returncode, 2)
+            self.assertIn(b"revision_conflict", stale.stderr)
+            with closing(sqlite3.connect(store)) as db:
+                self.assertEqual(db.execute("SELECT revision FROM memories WHERE id=?", (identifier,)).fetchone(), (1,))
+            subprocess.run(command + ["forget", identifier, "--revision", "1"], capture_output=True, check=True)
+            with closing(sqlite3.connect(store)) as db:
+                self.assertEqual(db.execute("SELECT count(*) FROM memories WHERE id=?", (identifier,)).fetchone()[0], 0)
+                self.assertEqual(db.execute("SELECT decision FROM grants WHERE scope='study'").fetchone()[0], "pause")
+            self.assertEqual(subprocess.run(command + ["get", retained_id], capture_output=True, check=True).stdout, original)
+
     def test_non_utf8_json_is_rejected_before_creating_a_store(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()

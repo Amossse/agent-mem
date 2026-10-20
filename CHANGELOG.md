@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Cover exact forgetting of an expired memory while additions/updates are paused: a wrong revision preserves the row, the current revision removes it, and consent stays paused. Runtime behavior is unchanged.
+
 - Enforce the documented UTF-8 JSON input contract before any database access, rejecting auto-detected UTF-16/32 inputs. Preserve optional UTF-8 BOM compatibility and cover non-ASCII cards through the CLI.
 
 - Fault-inject a second-host installation write failure and verify staging cleanup, preservation of the first installed copy and an idempotent retry. Runtime behavior is unchanged; this is not automatic rollback.
