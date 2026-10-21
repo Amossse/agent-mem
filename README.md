@@ -126,6 +126,7 @@ agent-mem --db /absolute/path/to/shared-memory.sqlite3 --scope study search "car
 - Sharing across hosts/projects requires the same authorized absolute database path and scope.
   Namespaces prevent accidental retrieval across topics; they are not access-control boundaries.
 - `grant approve` enables ongoing additions/updates; `grant pause` stops those writes but preserves recall.
+- `get <id> --include-expired` explicitly inspects a known exact target in the current scope, including its stored expiry and revision, before correction or forgetting. Default recall and export still hide expired rows; this read does not refresh or modify the memory, including while paused.
 - `forget` removes one exact row, even when paused. It requires the latest revision and human authority.
 - `export` prints active memories as schema-versioned JSON. It does not upload them; no import in v0.1.
 - `expires_at` hides stale records from retrieval but leaves them stored until explicitly forgotten.

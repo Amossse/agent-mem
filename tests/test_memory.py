@@ -21,6 +21,36 @@ EXAMPLE = {"kind": "preference", "title": "学习卡片格式",
 
 
 class MemoryLoop(unittest.TestCase):
+    def test_explicit_expired_inspection_is_read_only_and_scope_bound(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = Path(directory).resolve() / "memory.sqlite3"
+            command = [sys.executable, str(SCRIPT), "--db", str(store), "--scope", "study"]
+            subprocess.run(command + ["grant", "--decision", "approve"], capture_output=True, check=True)
+            expired = {**EXAMPLE, "expires_at": "2000-01-01T00:00:00Z"}
+            created = subprocess.run(command + ["add", "--input", "-"], input=json.dumps(expired),
+                                     text=True, capture_output=True, check=True)
+            identifier = json.loads(created.stdout)["id"]
+            subprocess.run(command + ["grant", "--decision", "pause"], capture_output=True, check=True)
+            before = store.read_bytes()
+            self.assertEqual(subprocess.run(command + ["get", identifier], capture_output=True).returncode, 2)
+            result = subprocess.run(command + ["get", identifier, "--include-expired"], capture_output=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            record = json.loads(result.stdout)
+            self.assertEqual((record["body"], record["revision"], record["expires_at"]),
+                             (expired["body"], 1, "2000-01-01T00:00:00.000000+00:00"))
+            subprocess.run([sys.executable, str(SCRIPT), "install", "--workspace", str(store.parent),
+                            "--agent", "generic"], capture_output=True, check=True)
+            installed = Path(directory).resolve() / ".agents/skills/agent-mem/scripts/mem.py"
+            standalone = [sys.executable, str(installed), *command[2:], "get", identifier, "--include-expired"]
+            self.assertEqual(json.loads(subprocess.run(standalone, capture_output=True, check=True).stdout), record)
+            other = command[:-1] + ["other", "get", identifier, "--include-expired"]
+            self.assertEqual(subprocess.run(other, capture_output=True).returncode, 2)
+            self.assertEqual(json.loads(subprocess.run(command + ["search"], capture_output=True,
+                                                       check=True).stdout)["items"], [])
+            self.assertEqual(json.loads(subprocess.run(command + ["export"], capture_output=True,
+                                                       check=True).stdout)["items"], [])
+            self.assertEqual(store.read_bytes(), before)
+
     def test_expired_memory_can_be_forgotten_while_writes_are_paused(self):
         with tempfile.TemporaryDirectory() as directory:
             store = Path(directory).resolve() / "memory.sqlite3"

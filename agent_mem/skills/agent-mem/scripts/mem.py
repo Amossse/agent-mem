@@ -290,7 +290,7 @@ def run(args):
                     return timeline(db, scope, args.id, args.before, args.after)
                 return context(db, scope, args.query, args.limit, args.max_chars)
             if args.command == "get":
-                return item(db, scope, args.id)
+                return item(db, scope, args.id, include_expired=args.include_expired)
             if args.command == "export":
                 rows = db.execute("SELECT * FROM memories WHERE scope=? AND "
                                   "(expires_at IS NULL OR expires_at>?) ORDER BY id", (scope, now()))
@@ -350,6 +350,9 @@ def main(argv=None):
         action = sub.add_parser(command)
         if command != "add":
             action.add_argument("id")
+        if command == "get":
+            action.add_argument("--include-expired", action="store_true",
+                                help="Inspect an exact expired target before correction or forgetting")
         if command in {"update", "forget"}:
             action.add_argument("--revision", type=int, required=True)
         if command in {"add", "update"}:

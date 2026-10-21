@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add explicit, same-scope `get <id> --include-expired` inspection before correcting or forgetting an expired target. Default recall/export remain expiry-filtered; cover paused, read-only and cross-scope behavior with fictional CLI data.
+
 - Cover exact forgetting of an expired memory while additions/updates are paused: a wrong revision preserves the row, the current revision removes it, and consent stays paused. Runtime behavior is unchanged.
 
 - Enforce the documented UTF-8 JSON input contract before any database access, rejecting auto-detected UTF-16/32 inputs. Preserve optional UTF-8 BOM compatibility and cover non-ASCII cards through the CLI.

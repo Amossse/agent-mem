@@ -57,6 +57,10 @@ Use only the authorized active task; do not scan archives or unrelated files.
 
 ## Correct and forget
 
+An expired record is hidden from normal recall. To review a known exact target before correction
+or forgetting, use `get <id> --include-expired` in its authorized scope. This read-only opt-in exposes
+its stored expiry and current revision, not fresh evidence; search and export still exclude it.
+
 Read the existing record before `update <id> --revision <current> --input <file>`.
 Keep its evidence accurate; a newer observation may contradict an older one. Do not merge unrelated facts.
 A revision conflict means another writer changed it: read again, do not force an overwrite.
