@@ -21,6 +21,24 @@ EXAMPLE = {"kind": "preference", "title": "学习卡片格式",
 
 
 class MemoryLoop(unittest.TestCase):
+    def test_private_ipv6_inputs_are_refused_before_storage(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = Path(directory).resolve() / "memory.sqlite3"
+            command = [sys.executable, str(SCRIPT), "--db", str(store), "--scope", "study"]
+            subprocess.run(command + ["grant", "--decision", "approve"], capture_output=True, check=True)
+            before = store.read_bytes()
+            for address in ("::1", "fd00::123", "fe80::123", "::ffff:192.168.1.7"):
+                result = subprocess.run(command + ["add", "--input", "-"],
+                                        input=json.dumps({**EXAMPLE, "body": f"Fictional address [{address}]"}),
+                                        text=True, capture_output=True)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn("privacy_check_failed", result.stderr)
+                self.assertNotIn(address, result.stderr)
+                self.assertEqual(store.read_bytes(), before)
+            public = {**EXAMPLE, "body": "Fictional public resolver 2001:4860:4860::8888 at 09:30:00."}
+            subprocess.run(command + ["add", "--input", "-"], input=json.dumps(public),
+                           text=True, capture_output=True, check=True)
+
     def test_explicit_expired_inspection_is_read_only_and_scope_bound(self):
         with tempfile.TemporaryDirectory() as directory:
             store = Path(directory).resolve() / "memory.sqlite3"

@@ -158,6 +158,8 @@ other projects should add `.agent-mem/` to their `.gitignore` before using memor
 
 ## Validation
 
+Best-effort privacy screening now parses conventional IPv6 literals as well as IPv4. Private/loopback/link-local addresses are rejected before storage without echoing them; public literals and ordinary times remain usable. This does not detect all obfuscated addresses or internal information, and it does not scan or clean existing memories.
+
 A fictional CLI regression covers forgetting an expired, recall-hidden memory while writes are paused. A wrong revision preserves the row; the current revision removes only that target and keeps consent paused. This adds coverage, not new runtime behavior or deletion of backups and exports.
 
 Memory-card files and stdin must be UTF-8 JSON; an optional UTF-8 BOM is accepted. UTF-16/32 input is rejected before creating or accessing a database. Convert the source explicitly to UTF-8 rather than relying on JSON encoding auto-detection; existing databases need no migration.

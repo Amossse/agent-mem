@@ -72,6 +72,16 @@ def private_check(value):
                 raise Error("privacy_check_failed")
         except ValueError:
             pass
+    # Parse IPv6 literals without treating ordinary times as addresses.
+    for candidate in re.findall(r"[0-9A-Fa-f:.%]+", text):
+        if candidate.count(":") < 2:
+            continue
+        try:
+            address = ipaddress.IPv6Address(candidate.split("%", 1)[0].rstrip("."))
+        except ValueError:
+            continue
+        if address.is_private:
+            raise Error("privacy_check_failed")
     for address in re.findall(r"[\w.+-]+@([\w.-]+\.[A-Za-z]{2,})", text):
         if address not in {"example.com", "example.org", "example.net"}:
             raise Error("privacy_check_failed")
