@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Use one expiry cutoff per layered context/timeline request, preventing mid-request clock changes from invalidating selected details or neighbors. Keep later-request expiry filtering and database snapshot behavior; cover both layers with a controlled fictional clock and unchanged store bytes.
+
 - Screen conventional private IPv6 literals before memory writes, including loopback, unique-local, link-local and mapped private IPv4 forms. Preserve public IPv6 and time strings; errors do not echo addresses. No existing memories are scanned or changed.
 
 - Add explicit, same-scope `get <id> --include-expired` inspection before correcting or forgetting an expired target. Default recall/export remain expiry-filtered; cover paused, read-only and cross-scope behavior with fictional CLI data.

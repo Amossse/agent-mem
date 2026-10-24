@@ -1,6 +1,7 @@
 """Layered retrieval with fictional data; no model or real conversation archives."""
 
 import json
+import runpy
 import sqlite3
 import subprocess
 import sys
@@ -8,11 +9,42 @@ import tempfile
 import unittest
 from contextlib import closing
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 from test_memory import EXAMPLE, SCRIPT
 
 
 class Retrieval(unittest.TestCase):
+    def test_layered_retrieval_uses_one_expiry_cutoff(self):
+        runtime = runpy.run_path(str(SCRIPT.parent / "skills/agent-mem/scripts/mem.py"))
+        before, expiry, after = ("2030-01-01T00:00:00+00:00", "2030-01-01T00:00:01+00:00",
+                                 "2030-01-01T00:00:02+00:00")
+        with tempfile.TemporaryDirectory() as directory:
+            store = Path(directory).resolve() / "memory.sqlite3"
+            with closing(runtime["connect"](store)) as db:
+                with db:
+                    db.execute("INSERT INTO grants VALUES(?,?,?)", ("study", "pause", before))
+                    for identifier in ("a" * 32, "b" * 32):
+                        db.execute("INSERT INTO memories VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                                   (identifier, "study", "fact", "Fictional note", "Fictional observation",
+                                    "Fictional source", "demo", expiry, 1, before, before))
+                original = store.read_bytes()
+                for command in ("context", "timeline"):
+                    clock = Mock(side_effect=[before, after, after])
+                    with self.subTest(command=command), patch.dict(runtime[command].__globals__, now=clock):
+                        if command == "context":
+                            result = runtime[command](db, "study", "Fictional", 5, 4000)
+                            self.assertEqual(set(result["ids"]), {"a" * 32, "b" * 32})
+                        else:
+                            result = runtime[command](db, "study", "a" * 32, 3, 3)
+                            self.assertEqual(len(result["items"]), 2)
+                        self.assertEqual(clock.call_count, 1)
+                with patch.dict(runtime["context"].__globals__, now=Mock(return_value=after)):
+                    self.assertEqual(runtime["context"](db, "study", "Fictional", 5, 4000)["ids"], [])
+                    with self.assertRaises(runtime["Error"]):
+                        runtime["timeline"](db, "study", "a" * 32, 3, 3)
+                self.assertEqual(store.read_bytes(), original)
+
     def test_timeline_and_budgeted_context(self):
         with tempfile.TemporaryDirectory() as directory:
             store = Path(directory).resolve() / "memory.sqlite3"

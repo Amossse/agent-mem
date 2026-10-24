@@ -158,6 +158,8 @@ other projects should add `.agent-mem/` to their `.gitignore` before using memor
 
 ## Validation
 
+Each `context` or `timeline` request uses one expiry cutoff across its retrieval layers, alongside the existing database read snapshot. A record cannot disappear between search/anchor inspection and detail/neighbor reads merely because the clock crosses its expiry mid-request. A later request samples time again and excludes expired records. This does not renew or modify memories; recheck freshness before relying on them.
+
 Best-effort privacy screening now parses conventional IPv6 literals as well as IPv4. Private/loopback/link-local addresses are rejected before storage without echoing them; public literals and ordinary times remain usable. This does not detect all obfuscated addresses or internal information, and it does not scan or clean existing memories.
 
 A fictional CLI regression covers forgetting an expired, recall-hidden memory while writes are paused. A wrong revision preserves the row; the current revision removes only that target and keeps consent paused. This adds coverage, not new runtime behavior or deletion of backups and exports.
