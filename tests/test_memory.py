@@ -1,5 +1,6 @@
 """One isolated end-to-end regression check; fictional records, no agent model."""
 
+import io
 import json
 import os
 import runpy
@@ -21,6 +22,24 @@ EXAMPLE = {"kind": "preference", "title": "学习卡片格式",
 
 
 class MemoryLoop(unittest.TestCase):
+    def test_unencodable_search_queries_fail_without_changing_the_store(self):
+        runtime = runpy.run_path(str(REPO / "agent_mem/skills/agent-mem/scripts/mem.py"))
+        with tempfile.TemporaryDirectory() as directory:
+            store = Path(directory).resolve() / "memory.sqlite3"
+            args = ["--db", str(store), "--scope", "study"]
+            subprocess.run([sys.executable, str(SCRIPT), *args, "grant", "--decision", "approve"],
+                           capture_output=True, check=True)
+            before = store.read_bytes()
+            for command in ("search", "context"):
+                for query in ("\ud800", "\udcff"):
+                    output, errors = io.StringIO(), io.StringIO()
+                    with patch("sys.stdout", output), patch("sys.stderr", errors):
+                        self.assertEqual(runtime["main"]([*args, command, query]), 2)
+                    self.assertIn("invalid_search_query", errors.getvalue())
+                    self.assertNotIn("Traceback", errors.getvalue())
+                    self.assertNotIn(query, errors.getvalue())
+                    self.assertEqual(store.read_bytes(), before)
+
     def test_private_ipv6_inputs_are_refused_before_storage(self):
         with tempfile.TemporaryDirectory() as directory:
             store = Path(directory).resolve() / "memory.sqlite3"

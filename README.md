@@ -166,6 +166,8 @@ A fictional CLI regression covers forgetting an expired, recall-hidden memory wh
 
 Memory-card files and stdin must be UTF-8 JSON; an optional UTF-8 BOM is accepted. UTF-16/32 input is rejected before creating or accessing a database. Convert the source explicitly to UTF-8 rather than relying on JSON encoding auto-detection; existing databases need no migration.
 
+Search and context queries must also be encodable as UTF-8. Unpaired surrogates return `invalid_search_query` without echoing the query or changing stored records; ordinary Unicode search remains supported. This validation does not repair malformed source arguments.
+
 Regression coverage includes rejected updates preserving the complete record and revision; these are fictional CLI checks, not live-model validation.
 
 The runnable check uses separate CLI processes and fictional records. It exercises consent, cross-host

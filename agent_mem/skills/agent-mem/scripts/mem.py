@@ -194,6 +194,10 @@ def item(db, scope, identifier, include_expired=False, as_of=None):
 def search(db, scope, query, limit, as_of=None):
     if not 1 <= limit <= 50 or len(query) > 500 or len(query.split()) > 10:
         raise Error("invalid_search_bounds")
+    try:
+        query.encode("utf-8")
+    except UnicodeError:
+        raise Error("invalid_search_query") from None
     sql = f"SELECT {INDEX_FIELDS} FROM memories WHERE scope=?"
     sql += " AND (expires_at IS NULL OR expires_at>?)"
     params = [scope, as_of or now()]

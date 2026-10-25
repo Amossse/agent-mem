@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Reject unencodable search/context queries with a controlled `invalid_search_query` error instead of a SQLite binding traceback. Preserve valid Unicode queries and stored data; cover both entry points with fictional inputs and unchanged database bytes.
+
 - Use one expiry cutoff per layered context/timeline request, preventing mid-request clock changes from invalidating selected details or neighbors. Keep later-request expiry filtering and database snapshot behavior; cover both layers with a controlled fictional clock and unchanged store bytes.
 
 - Screen conventional private IPv6 literals before memory writes, including loopback, unique-local, link-local and mapped private IPv4 forms. Preserve public IPv6 and time strings; errors do not echo addresses. No existing memories are scanned or changed.
