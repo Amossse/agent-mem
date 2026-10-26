@@ -313,6 +313,8 @@ def run(args):
                                   "(expires_at IS NULL OR expires_at>?) ORDER BY id", (scope, now()))
                 return {"schema_version": 1, "scope": scope, "items": [dict(row) for row in rows]}
             if args.command in {"add", "update"}:
+                # Serialize consent inspection with its write, including concurrent pauses.
+                db.execute("BEGIN IMMEDIATE")
                 approved(db, scope)
             if args.command == "add":
                 identifier, stamp = uuid.uuid4().hex, now()

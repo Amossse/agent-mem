@@ -98,6 +98,7 @@ answer; do not use these commands to infer consent in another workflow.
 
 `Host Skill -> local Python CLI -> SQLite transaction -> compact JSON result`.
 The host distills the observation; this package never calls a model or scans conversation archives.
+Add/update inspect approval inside the same immediate SQLite write transaction as the mutation. A concurrent pause cannot commit between those operations: an already-started write finishes before a waiting pause, and subsequent writes see the pause and fail. Contention retains the existing bounded database timeout and controlled error; this is serialization, not speaker authentication or cancellation of in-flight work.
 Search first returns IDs/titles, `timeline` shows nearby compact records, then `get` returns selected
 complete records. This avoids injecting
 the full memory database into every conversation. Search uses bounded literal substring matching,

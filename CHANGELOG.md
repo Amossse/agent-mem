@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Hold one immediate SQLite write transaction across approval inspection and add/update, so a concurrent pause cannot commit between the check and mutation. Cover both commands with a competing connection, then verify a committed pause refuses subsequent writes. In-flight writes finish before a waiting pause; this does not authenticate consent.
+
 - Reject unencodable search/context queries with a controlled `invalid_search_query` error instead of a SQLite binding traceback. Preserve valid Unicode queries and stored data; cover both entry points with fictional inputs and unchanged database bytes.
 
 - Use one expiry cutoff per layered context/timeline request, preventing mid-request clock changes from invalidating selected details or neighbors. Keep later-request expiry filtering and database snapshot behavior; cover both layers with a controlled fictional clock and unchanged store bytes.

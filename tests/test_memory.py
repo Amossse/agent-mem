@@ -22,6 +22,36 @@ EXAMPLE = {"kind": "preference", "title": "学习卡片格式",
 
 
 class MemoryLoop(unittest.TestCase):
+    def test_consent_check_and_mutation_share_a_write_transaction(self):
+        runtime = runpy.run_path(str(REPO / "agent_mem/skills/agent-mem/scripts/mem.py"))
+        original_approved = runtime["approved"]
+        with tempfile.TemporaryDirectory() as directory:
+            store = Path(directory).resolve() / "memory.sqlite3"
+            command = [sys.executable, str(SCRIPT), "--db", str(store), "--scope", "study"]
+            subprocess.run(command + ["grant", "--decision", "approve"], capture_output=True, check=True)
+            source = Path(directory) / "fictional.json"
+            source.write_text(json.dumps(EXAMPLE), encoding="utf-8")
+
+            def check_locked(db, scope):
+                original_approved(db, scope)
+                with closing(sqlite3.connect(store, timeout=0)) as other, other:
+                    with self.assertRaisesRegex(sqlite3.OperationalError, "locked"):
+                        other.execute("UPDATE grants SET decision='pause' WHERE scope=?", (scope,))
+
+            args = ["--db", str(store), "--scope", "study"]
+            with patch.dict(runtime["run"].__globals__, approved=check_locked), patch("sys.stdout", io.StringIO()) as output:
+                self.assertEqual(runtime["main"]([*args, "add", "--input", str(source)]), 0)
+                identifier = json.loads(output.getvalue())["id"]
+                self.assertEqual(runtime["main"]([*args, "update", identifier, "--revision", "1",
+                                                  "--input", str(source)]), 0)
+            subprocess.run(command + ["grant", "--decision", "pause"], capture_output=True, check=True)
+            before = store.read_bytes()
+            for action in (["add"], ["update", identifier, "--revision", "2"]):
+                result = subprocess.run(command + action + ["--input", str(source)], capture_output=True)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn(b"scope_not_approved", result.stderr)
+                self.assertEqual(store.read_bytes(), before)
+
     def test_unencodable_search_queries_fail_without_changing_the_store(self):
         runtime = runpy.run_path(str(REPO / "agent_mem/skills/agent-mem/scripts/mem.py"))
         with tempfile.TemporaryDirectory() as directory:
