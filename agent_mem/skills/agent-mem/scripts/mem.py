@@ -7,6 +7,7 @@ import json
 import os
 import re
 import sqlite3
+import stat
 import sys
 import tempfile
 import uuid
@@ -134,8 +135,16 @@ def load(path):
     if path == "-":
         data = sys.stdin.buffer.read(LIMIT + 1)
     else:
-        with Path(path).open("rb") as stream:
-            data = stream.read(LIMIT + 1)
+        # Inspect the opened file without waiting for a FIFO writer.
+        flags = os.O_RDONLY | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_BINARY", 0)
+        descriptor = os.open(path, flags)
+        try:
+            if not stat.S_ISREG(os.fstat(descriptor).st_mode):
+                raise Error("input_must_be_regular_file")
+            with os.fdopen(descriptor, "rb", closefd=False) as stream:
+                data = stream.read(LIMIT + 1)
+        finally:
+            os.close(descriptor)
     if len(data) > LIMIT:
         raise Error("input_too_large")
     try:
@@ -375,7 +384,7 @@ def main(argv=None):
         if command in {"update", "forget"}:
             action.add_argument("--revision", type=int, required=True)
         if command in {"add", "update"}:
-            action.add_argument("--input", required=True, help="Bounded UTF-8 JSON file, or - for stdin")
+            action.add_argument("--input", required=True, help="Bounded regular UTF-8 JSON file, or - for stdin")
     sub.add_parser("export", help="Print active records; this does not publish them")
     args = parser.parse_args(argv)
     try:

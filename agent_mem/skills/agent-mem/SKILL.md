@@ -39,6 +39,8 @@ The CLI cannot authenticate the speaker. Never approve yourself or infer broader
 
 For `add --input <file>` or `--input -`, supply this exact record (expiry optional):
 
+Named inputs must be regular UTF-8 JSON files, not FIFOs or devices. Explicit `--input -` retains bounded stdin streaming and may wait for the producer.
+
 ```json
 {
   "kind": "preference",

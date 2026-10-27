@@ -5,6 +5,7 @@ import json
 import os
 import runpy
 import sqlite3
+import stat
 import subprocess
 import sys
 import tempfile
@@ -12,6 +13,7 @@ import unittest
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import closing
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 REPO = Path(__file__).resolve().parents[1]
@@ -22,6 +24,32 @@ EXAMPLE = {"kind": "preference", "title": "学习卡片格式",
 
 
 class MemoryLoop(unittest.TestCase):
+    def test_card_input_checks_the_opened_file_type(self):
+        runtime = runpy.run_path(str(REPO / "agent_mem/skills/agent-mem/scripts/mem.py"))
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "fictional.json"
+            source.write_text(json.dumps(EXAMPLE), encoding="utf-8")
+            with patch.object(os, "fstat", return_value=SimpleNamespace(st_mode=stat.S_IFIFO)):
+                with self.assertRaisesRegex(runtime["Error"], "input_must_be_regular_file"):
+                    runtime["load"](source)
+            self.assertEqual(runtime["load"](source)["body"], EXAMPLE["body"])
+
+    @unittest.skipUnless(hasattr(os, "mkfifo"), "POSIX FIFO check")
+    def test_card_fifo_is_refused_before_database_access(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            source, store = root / "fictional.pipe", root / "absent/memory.sqlite3"
+            os.mkfifo(source)
+            command = [sys.executable, str(SCRIPT), "--db", str(store), "--scope", "study"]
+            for action in (["add"], ["update", "a" * 32, "--revision", "1"]):
+                result = subprocess.run(command + action + ["--input", str(source)],
+                                        capture_output=True, timeout=3)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn(b"input_must_be_regular_file", result.stderr)
+                self.assertNotIn(str(source).encode(), result.stderr)
+                self.assertNotIn(b"Traceback", result.stderr)
+                self.assertFalse(store.parent.exists())
+
     def test_consent_check_and_mutation_share_a_write_transaction(self):
         runtime = runpy.run_path(str(REPO / "agent_mem/skills/agent-mem/scripts/mem.py"))
         original_approved = runtime["approved"]
