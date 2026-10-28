@@ -1,5 +1,7 @@
 # Agent Mem
 
+隐私检查允许虚构邮箱使用 `example.com`、`example.org` 和 `example.net`，域名不区分大小写，卡片原文保持不变。其它邮箱域名仍被拒绝；此项检查无法完整识别所有敏感信息。
+
 把值得保留的经验记一次，让另一个 Agent 也能查到。
 
 一个通用 Agent Skill，加一个本地记忆管理 CLI。兼容的 Agent 共用 SQLite 文件和命名空间，保存偏好、事实、决策与操作经验。[English](README.md)

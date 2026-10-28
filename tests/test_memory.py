@@ -24,6 +24,29 @@ EXAMPLE = {"kind": "preference", "title": "学习卡片格式",
 
 
 class MemoryLoop(unittest.TestCase):
+    def test_example_email_domains_are_case_insensitive_without_rewriting_content(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = Path(directory).resolve() / "memory.sqlite3"
+            command = [sys.executable, str(SCRIPT), "--db", str(store), "--scope", "study"]
+            subprocess.run(command + ["grant", "--decision", "approve"], capture_output=True, check=True)
+            for domain in ("EXAMPLE.COM", "Example.Org", "example.NET"):
+                body = f"Fictional contact PERSON@{domain}"
+                created = subprocess.run(command + ["add", "--input", "-"],
+                                         input=json.dumps({**EXAMPLE, "body": body}),
+                                         text=True, encoding="utf-8", capture_output=True)
+                self.assertEqual(created.returncode, 0, created.stderr)
+                identifier = json.loads(created.stdout)["id"]
+                fetched = subprocess.run(command + ["get", identifier], capture_output=True, check=True)
+                self.assertEqual(json.loads(fetched.stdout)["body"], body)
+            before = store.read_bytes()
+            rejected = subprocess.run(command + ["add", "--input", "-"],
+                                      input=json.dumps({**EXAMPLE, "body": "Fictional PERSON@UNLISTED.INVALID"}),
+                                      text=True, encoding="utf-8", capture_output=True)
+            self.assertEqual(rejected.returncode, 2)
+            self.assertIn("privacy_check_failed", rejected.stderr)
+            self.assertNotIn("PERSON", rejected.stderr)
+            self.assertEqual(store.read_bytes(), before)
+
     def test_card_input_checks_the_opened_file_type(self):
         runtime = runpy.run_path(str(REPO / "agent_mem/skills/agent-mem/scripts/mem.py"))
         with tempfile.TemporaryDirectory() as directory:

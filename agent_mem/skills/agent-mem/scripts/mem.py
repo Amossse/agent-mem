@@ -84,7 +84,7 @@ def private_check(value):
         if address.is_private:
             raise Error("privacy_check_failed")
     for address in re.findall(r"[\w.+-]+@([\w.-]+\.[A-Za-z]{2,})", text):
-        if address not in {"example.com", "example.org", "example.net"}:
+        if address.lower() not in {"example.com", "example.org", "example.net"}:
             raise Error("privacy_check_failed")
 
 

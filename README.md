@@ -1,5 +1,7 @@
 # Agent Mem
 
+The privacy check permits fictional email domains `example.com`, `example.org` and `example.net` regardless of domain letter case, preserving the original card text. Other email domains remain rejected; this limited check is not a complete sensitive-data detector.
+
 **Remember once. Recall from another agent.**
 
 A portable Agent Skill and local memory manager for durable preferences, facts, decisions and
