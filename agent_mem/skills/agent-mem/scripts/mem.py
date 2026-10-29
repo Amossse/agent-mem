@@ -60,7 +60,7 @@ def private_check(value):
     text = json.dumps(value, ensure_ascii=False)
     patterns = [r"-----BEGIN (?:[A-Z]+ )?PRIVATE KEY-----",
                 r"\b(?:sk-[\w-]{12,}|gh[pousr]_[\w]{20,}|github_pat_[\w]{20,})\b",
-                r"\bAKIA[A-Z0-9]{16}\b", r"\bBearer\s+[\w.~+/-]{12,}",
+                r"\b(?:AKIA|ASIA)[A-Z0-9]{16}\b", r"\bBearer\s+[\w.~+/-]{12,}",
                 r"\b(?:api[_-]?key|password|secret|token)\s*[:=]\s*['\"]?[^\s'\"]{8,}",
                 r"(?:/Users/|/home/|[A-Za-z]:\\\\Users\\\\)[^\s]+",
                 r"\b[\w.-]+\.(?:internal|corp|local)\b",

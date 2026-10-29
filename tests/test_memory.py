@@ -24,6 +24,32 @@ EXAMPLE = {"kind": "preference", "title": "学习卡片格式",
 
 
 class MemoryLoop(unittest.TestCase):
+    def test_temporary_access_key_ids_are_rejected_before_storage(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            store = root / "memory.sqlite3"
+            command = [sys.executable, str(SCRIPT), "--db", str(store), "--scope", "study"]
+            subprocess.run(command + ["grant", "--decision", "approve"], capture_output=True, check=True)
+            created = subprocess.run(command + ["add", "--input", "-"], input=json.dumps(EXAMPLE),
+                                     text=True, encoding="utf-8", capture_output=True, check=True)
+            identifier = json.loads(created.stdout)["id"]
+            before = store.read_bytes()
+            for prefix in ("AKIA", "ASIA"):
+                marker = prefix + "Q" * 16  # Constructed identifier only; never a real credential.
+                payload = json.dumps({**EXAMPLE, "body": f"Fictional sample {marker}"})
+                for action in (["add"], ["update", identifier, "--revision", "1"]):
+                    result = subprocess.run(command + action + ["--input", "-"], input=payload,
+                                            text=True, encoding="utf-8", capture_output=True)
+                    self.assertEqual(result.returncode, 2)
+                    self.assertIn("privacy_check_failed", result.stderr)
+                    self.assertNotIn(marker, result.stderr)
+                    self.assertEqual(store.read_bytes(), before)
+                missing = root / "absent/memory.sqlite3"
+                result = subprocess.run([*command[:3], str(missing), *command[4:], "add", "--input", "-"],
+                                        input=payload, text=True, encoding="utf-8", capture_output=True)
+                self.assertEqual(result.returncode, 2)
+                self.assertFalse(missing.parent.exists())
+
     def test_example_email_domains_are_case_insensitive_without_rewriting_content(self):
         with tempfile.TemporaryDirectory() as directory:
             store = Path(directory).resolve() / "memory.sqlite3"

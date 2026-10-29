@@ -145,6 +145,8 @@ an OS sandbox or protection against a hostile local process racing filesystem op
 
 ## Privacy and limits
 
+The credential filter also rejects bare AWS STS access key IDs beginning with `ASIA`, alongside the existing `AKIA` rule, before add/update touches the store. Fictional CLI checks preserve existing records and avoid creating a missing store on rejection. This is best-effort screening, not a full credential detector or a cleanup of previously stored content.
+
 CLI operations are local: no telemetry, network requests, transcript mining or background process.
 The host model may still receive retrieved data under its own provider's policies. Local storage is
 not encrypted. The namespace/grant mechanism is a convention between trusted local hosts, not authentication.

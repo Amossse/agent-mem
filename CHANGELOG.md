@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Reject bare AWS STS access key IDs before memory add/update, extending the existing access-key rule. Cover controlled diagnostics, unchanged existing stores and no new store creation using constructed identifiers only.
+
 - Allow reserved fictional email domains case-insensitively without rewriting card content. Cover CLI add/get preservation and continued rejection of other domains.
 
 - Require named card inputs to be regular files, inspecting the opened descriptor before reading. Nonblocking open refuses POSIX FIFOs before database access instead of waiting for a writer; preserve explicit stdin streaming, UTF-8/BOM and byte limits. Cover add/update FIFO refusal and cross-platform descriptor validation.
