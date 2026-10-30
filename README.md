@@ -163,6 +163,8 @@ other projects should add `.agent-mem/` to their `.gitignore` before using memor
 
 ## Validation
 
+A database-rejection regression checks that the actual opened SQLite connection is closed when an unrelated database is refused, its bytes stay unchanged, and a normal toolkit store can still open afterward. Runtime behavior is unchanged; this is not comprehensive database-failure recovery.
+
 Each `context` or `timeline` request uses one expiry cutoff across its retrieval layers, alongside the existing database read snapshot. A record cannot disappear between search/anchor inspection and detail/neighbor reads merely because the clock crosses its expiry mid-request. A later request samples time again and excludes expired records. This does not renew or modify memories; recheck freshness before relying on them.
 
 Best-effort privacy screening now parses conventional IPv6 literals as well as IPv4. Private/loopback/link-local addresses are rejected before storage without echoing them; public literals and ordinary times remain usable. This does not detect all obfuscated addresses or internal information, and it does not scan or clean existing memories.

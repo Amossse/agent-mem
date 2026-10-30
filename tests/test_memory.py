@@ -24,6 +24,36 @@ EXAMPLE = {"kind": "preference", "title": "学习卡片格式",
 
 
 class MemoryLoop(unittest.TestCase):
+    def test_unrecognized_database_rejection_closes_the_opened_connection(self):
+        runtime = runpy.run_path(str(REPO / "agent_mem/skills/agent-mem/scripts/mem.py"))
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            source = root / "fictional-other.sqlite3"
+            with closing(sqlite3.connect(source)) as db, db:
+                db.execute("CREATE TABLE fictional_notes (value TEXT)")
+                db.execute("INSERT INTO fictional_notes VALUES ('Fictional note')")
+            before = source.read_bytes()
+            original_connect, opened = sqlite3.connect, []
+
+            def track_connection(*args, **kwargs):
+                connection = original_connect(*args, **kwargs)
+                opened.append(connection)
+                return connection
+
+            try:
+                with patch.object(sqlite3, "connect", side_effect=track_connection):
+                    with self.assertRaisesRegex(runtime["Error"], "unrecognized_database"):
+                        runtime["connect"](source)
+                self.assertEqual(len(opened), 1)
+                with self.assertRaises(sqlite3.ProgrammingError):
+                    opened[0].execute("SELECT 1")
+                self.assertEqual(source.read_bytes(), before)
+                with closing(runtime["connect"](root / "memory.sqlite3")) as valid:
+                    self.assertEqual(valid.execute("PRAGMA user_version").fetchone()[0], 1)
+            finally:
+                for connection in opened:
+                    connection.close()
+
     def test_temporary_access_key_ids_are_rejected_before_storage(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
