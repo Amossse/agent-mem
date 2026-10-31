@@ -13,6 +13,8 @@ Do not wander into another project or namespace. If the authorized store is uncl
 
 ## Recall only what matters
 
+If a read command returns `database_missing`, report the missing store and check the intended path. Do not initialize a database solely to answer a read request; creating an approved scope still requires the human permission described below.
+
 Run `python scripts/mem.py --db <store> --scope <namespace> search "task keywords" --limit 5`.
 Search returns titles/IDs, not full records. For surrounding context, run
 `timeline <id> --before 3 --after 3`; it returns compact active neighbors in the same scope.

@@ -24,6 +24,39 @@ EXAMPLE = {"kind": "preference", "title": "学习卡片格式",
 
 
 class MemoryLoop(unittest.TestCase):
+    def test_read_commands_do_not_initialize_missing_stores(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = Path(directory).resolve() / "absent/memory.sqlite3"
+            command = [sys.executable, str(SCRIPT), "--db", str(store), "--scope", "study"]
+            for action in (["status"], ["search", "Fictional"], ["get", "a" * 32],
+                           ["export"], ["context", "Fictional"], ["timeline", "a" * 32]):
+                result = subprocess.run(command + action, capture_output=True)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn(b"database_missing", result.stderr)
+                self.assertNotIn(str(store).encode(), result.stderr)
+                self.assertNotIn(b"Traceback", result.stderr)
+                self.assertFalse(store.parent.exists())
+            subprocess.run(command + ["grant", "--decision", "approve"], capture_output=True, check=True)
+            before = store.read_bytes()
+            result = subprocess.run(command + ["status"], capture_output=True, check=True)
+            self.assertEqual(json.loads(result.stdout)["decision"], "approve")
+            self.assertEqual(store.read_bytes(), before)
+            runtime = runpy.run_path(str(REPO / "agent_mem/skills/agent-mem/scripts/mem.py"))
+            with closing(runtime["connect"](store, create=False)) as readonly:
+                with self.assertRaises(sqlite3.OperationalError):
+                    readonly.execute("CREATE TABLE forbidden (value TEXT)")
+            self.assertEqual(store.read_bytes(), before)
+            original_connect = sqlite3.connect
+
+            def removed_before_open(*args, **kwargs):
+                store.unlink()  # Simulate removal of this fictional fixture between check and open.
+                return original_connect(*args, **kwargs)
+
+            with patch.object(sqlite3, "connect", side_effect=removed_before_open):
+                with self.assertRaises(sqlite3.OperationalError):
+                    runtime["connect"](store, create=False)
+            self.assertFalse(store.exists())
+
     def test_unrecognized_database_rejection_closes_the_opened_connection(self):
         runtime = runpy.run_path(str(REPO / "agent_mem/skills/agent-mem/scripts/mem.py"))
         with tempfile.TemporaryDirectory() as directory:

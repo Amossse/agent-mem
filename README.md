@@ -145,6 +145,8 @@ an OS sandbox or protection against a hostile local process racing filesystem op
 
 ## Privacy and limits
 
+Read-only commands (`status`, `search`, `get`, `export`, `context`, `timeline`) return `database_missing` for an absent store without creating its parent directory or database. Existing stores open in SQLite read-only mode, so removal between inspection and opening cannot recreate them. Check the intended path; initialize a scope only through an explicitly authorized `grant` action. Mutation consent rules are unchanged.
+
 The credential filter also rejects bare AWS STS access key IDs beginning with `ASIA`, alongside the existing `AKIA` rule, before add/update touches the store. Fictional CLI checks preserve existing records and avoid creating a missing store on rejection. This is best-effort screening, not a full credential detector or a cleanup of previously stored content.
 
 CLI operations are local: no telemetry, network requests, transcript mining or background process.

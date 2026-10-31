@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Prevent read-only commands from initializing absent databases or parent directories, using SQLite read-only opens to avoid recreation after concurrent removal. Return database_missing and retain explicit grant initialization; cover all six read commands, rejected writes and subsequent authorized setup.
+
 - Cover connection closure after rejecting an unrelated SQLite database, preserving its bytes and checking a subsequent normal store open. Runtime behavior is unchanged.
 
 - Reject bare AWS STS access key IDs before memory add/update, extending the existing access-key rule. Cover controlled diagnostics, unchanged existing stores and no new store creation using constructed identifiers only.
