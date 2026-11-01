@@ -169,6 +169,10 @@ def connect(path, create=True):
         raise Error("invalid_database_path")
     if create:
         path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        if fresh:
+            # A concurrent creator owns that path; never reinterpret its database.
+            descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            os.close(descriptor)
     # A read must not recreate a store removed after the existence check.
     target = path if create else path.as_uri() + "?mode=ro"
     db = sqlite3.connect(target, timeout=5, uri=not create)

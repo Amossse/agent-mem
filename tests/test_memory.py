@@ -24,6 +24,30 @@ EXAMPLE = {"kind": "preference", "title": "学习卡片格式",
 
 
 class MemoryLoop(unittest.TestCase):
+    def test_initialization_refuses_a_database_created_after_the_path_check(self):
+        runtime = runpy.run_path(str(REPO / "agent_mem/skills/agent-mem/scripts/mem.py"))
+        with tempfile.TemporaryDirectory() as directory:
+            store = Path(directory).resolve() / "memory.sqlite3"
+            original_mkdir, snapshots = Path.mkdir, []
+
+            def competing_creator(parent, *args, **kwargs):
+                original_mkdir(parent, *args, **kwargs)
+                if parent == store.parent:
+                    with closing(sqlite3.connect(store)) as other, other:
+                        other.execute("CREATE TABLE fictional_notes (value TEXT)")
+                        other.execute("INSERT INTO fictional_notes VALUES ('Fictional note')")
+                    snapshots.append(store.read_bytes())
+
+            with patch.object(Path, "mkdir", new=competing_creator):
+                with self.assertRaises((runtime["Error"], OSError)):
+                    with closing(runtime["connect"](store)):
+                        pass
+            self.assertEqual(len(snapshots), 1)
+            self.assertEqual(store.read_bytes(), snapshots[0])
+            with closing(sqlite3.connect(store)) as other:
+                self.assertEqual(other.execute("PRAGMA application_id").fetchone()[0], 0)
+                self.assertEqual(other.execute("SELECT value FROM fictional_notes").fetchone()[0], "Fictional note")
+
     def test_read_commands_do_not_initialize_missing_stores(self):
         with tempfile.TemporaryDirectory() as directory:
             store = Path(directory).resolve() / "absent/memory.sqlite3"
