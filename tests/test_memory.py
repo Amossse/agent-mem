@@ -24,6 +24,24 @@ EXAMPLE = {"kind": "preference", "title": "学习卡片格式",
 
 
 class MemoryLoop(unittest.TestCase):
+    def test_custom_install_requires_the_canonical_skill_folder_name(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            command = [sys.executable, str(SCRIPT), "install", "--workspace", str(root), "--agent", "generic"]
+            rejected = root / "uncreated/fictional-other"
+            result = subprocess.run(command + ["--skill-dir", str(rejected)], capture_output=True)
+            self.assertEqual(result.returncode, 2)
+            self.assertIn(b"invalid_skill_directory_name", result.stderr)
+            self.assertNotIn(str(root).encode(), result.stderr)
+            self.assertFalse(rejected.parent.exists())
+            target = root / "custom/agent-mem"
+            subprocess.run(command + ["--skill-dir", str(target)], capture_output=True, check=True)
+            before = {p.relative_to(root): p.read_bytes() for p in root.rglob("*") if p.is_file()}
+            subprocess.run(command + ["--skill-dir", str(target)], capture_output=True, check=True)
+            self.assertEqual({p.relative_to(root): p.read_bytes() for p in root.rglob("*") if p.is_file()}, before)
+            installed = target / "scripts/mem.py"
+            subprocess.run([sys.executable, str(installed), "--help"], capture_output=True, check=True)
+
     def test_initialization_refuses_a_database_created_after_the_path_check(self):
         runtime = runpy.run_path(str(REPO / "agent_mem/skills/agent-mem/scripts/mem.py"))
         with tempfile.TemporaryDirectory() as directory:

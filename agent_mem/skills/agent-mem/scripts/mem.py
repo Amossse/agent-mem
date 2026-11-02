@@ -278,6 +278,8 @@ def install(workspace, agent, custom=None):
     destinations = [safe_path(target) for target in destinations]
     # Refuse known conflicts across all hosts before creating any installation.
     for target in destinations:
+        if target.name != "agent-mem":
+            raise Error("invalid_skill_directory_name")
         if target.exists():
             actual = {str(p.relative_to(target)).replace(os.sep, "/"): p.read_bytes()
                       for p in target.rglob("*") if p.is_file() and not p.is_symlink()}

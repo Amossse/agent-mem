@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Reject custom installation folders whose name is not agent-mem before creating directories. Cover non-echoing refusal, a valid retry, idempotence and the installed script's help entry point.
+
 - Reserve new database paths with exclusive creation before SQLite initialization, preventing a concurrent creator's database from being reinterpreted. Cover unchanged foreign bytes/schema metadata; no automatic cleanup or migration.
 
 - Prevent read-only commands from initializing absent databases or parent directories, using SQLite read-only opens to avoid recreation after concurrent removal. Return database_missing and retain explicit grant initialization; cover all six read commands, rejected writes and subsequent authorized setup.

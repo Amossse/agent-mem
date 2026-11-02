@@ -145,6 +145,8 @@ an OS sandbox or protection against a hostile local process racing filesystem op
 
 ## Privacy and limits
 
+Custom installation targets must end in `agent-mem`, matching the bundled Skill name. Invalid names fail before creating parent directories; correct custom targets remain installable and repeatable. This validates packaging, not discovery or automatic invocation by a host.
+
 New-store initialization reserves its path exclusively before opening SQLite. A concurrent creator causes a controlled failure without changing that database; inspect the target before retrying with the intended path. Interrupted initialization may leave an incomplete file for review; no automatic cleanup or hostile-filesystem guarantee is added.
 
 Read-only commands (`status`, `search`, `get`, `export`, `context`, `timeline`) return `database_missing` for an absent store without creating its parent directory or database. Existing stores open in SQLite read-only mode, so removal between inspection and opening cannot recreate them. Check the intended path; initialize a scope only through an explicitly authorized `grant` action. Mutation consent rules are unchanged.
