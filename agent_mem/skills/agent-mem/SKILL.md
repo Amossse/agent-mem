@@ -33,6 +33,8 @@ This skill does not promise automatic session-start injection; hosts must actual
 
 ## Remember with permission
 
+Only `grant` initializes a missing store. `add`, `update` and `forget` return `database_missing` without creating files or directories. Check the intended path and existing authorization before an explicit grant; never initialize a replacement store just to hide a missing one.
+
 Finish the current task. Propose a short durable observation instead of storing a transcript.
 Ask the human before enabling ongoing writes in a namespace. Explain which store and topic will be used.
 Record a real human answer using `grant --decision approve` or `grant --decision pause`.

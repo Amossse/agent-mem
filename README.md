@@ -145,6 +145,8 @@ an OS sandbox or protection against a hostile local process racing filesystem op
 
 ## Privacy and limits
 
+Only `grant` initializes a missing store. `add`, `update` and `forget` fail with `database_missing` without creating a database or parent directories. Existing writable stores open with SQLite `mode=rw` so removal between inspection and open cannot recreate them. Verify the intended path and human authorization before initialization; this is not authentication or a hostile-filesystem sandbox.
+
 Custom installation targets must end in `agent-mem`, matching the bundled Skill name. Invalid names fail before creating parent directories; correct custom targets remain installable and repeatable. This validates packaging, not discovery or automatic invocation by a host.
 
 New-store initialization reserves its path exclusively before opening SQLite. A concurrent creator causes a controlled failure without changing that database; inspect the target before retrying with the intended path. Interrupted initialization may leave an incomplete file for review; no automatic cleanup or hostile-filesystem guarantee is added.

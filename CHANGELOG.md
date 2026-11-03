@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Restrict missing-store initialization to grant. Reject add/update/forget without creating directories, and open writable stores with mode=rw to prevent recreation after removal. Cover refusal and subsequent authorized initialization; consent boundaries remain unchanged.
+
 - Reject custom installation folders whose name is not agent-mem before creating directories. Cover non-echoing refusal, a valid retry, idempotence and the installed script's help entry point.
 
 - Reserve new database paths with exclusive creation before SQLite initialization, preventing a concurrent creator's database from being reinterpreted. Cover unchanged foreign bytes/schema metadata; no automatic cleanup or migration.

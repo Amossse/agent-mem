@@ -24,6 +24,35 @@ EXAMPLE = {"kind": "preference", "title": "学习卡片格式",
 
 
 class MemoryLoop(unittest.TestCase):
+    def test_mutations_cannot_initialize_an_absent_store(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = Path(directory).resolve() / "absent/memory.sqlite3"
+            command = [sys.executable, str(SCRIPT), "--db", str(store), "--scope", "study"]
+            for action in (["add", "--input", "-"],
+                           ["update", "a" * 32, "--revision", "1", "--input", "-"],
+                           ["forget", "a" * 32, "--revision", "1"]):
+                result = subprocess.run(command + action, input=json.dumps(EXAMPLE), text=True,
+                                        encoding="utf-8", capture_output=True)
+                self.assertEqual(result.returncode, 2)
+                self.assertIn("database_missing", result.stderr)
+                self.assertNotIn(str(store), result.stderr)
+                self.assertFalse(store.parent.exists())
+            subprocess.run(command + ["grant", "--decision", "approve"], capture_output=True, check=True)
+            subprocess.run(command + ["add", "--input", "-"], input=json.dumps(EXAMPLE), text=True,
+                           encoding="utf-8", capture_output=True, check=True)
+            runtime = runpy.run_path(str(REPO / "agent_mem/skills/agent-mem/scripts/mem.py"))
+            original_connect = sqlite3.connect
+
+            def removed_before_open(*args, **kwargs):
+                store.unlink()  # Remove only this fictional fixture between inspection and opening.
+                return original_connect(*args, **kwargs)
+
+            with patch.object(sqlite3, "connect", side_effect=removed_before_open):
+                with self.assertRaises(sqlite3.OperationalError):
+                    with closing(runtime["connect"](store, initialize=False)):
+                        pass
+            self.assertFalse(store.exists())
+
     def test_custom_install_requires_the_canonical_skill_folder_name(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory).resolve()
@@ -485,7 +514,7 @@ class MemoryLoop(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
                 return json.loads(result.stdout)
 
-            call("add", "--input", "-", value=EXAMPLE, error="scope_not_approved")
+            call("add", "--input", "-", value=EXAMPLE, error="database_missing")
             call("grant", "--decision", "approve")  # Simulated human approval, not a model decision.
             saved = call("add", "--input", "-", value=EXAMPLE)
             identifier = saved["id"]

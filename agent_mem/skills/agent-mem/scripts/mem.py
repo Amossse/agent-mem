@@ -160,10 +160,10 @@ def safe_path(path):
     return path
 
 
-def connect(path, create=True):
+def connect(path, create=True, initialize=True):
     path = safe_path(path)
     fresh = not path.exists()
-    if fresh and not create:
+    if fresh and (not create or not initialize):
         raise Error("database_missing")
     if not fresh and not path.is_file():
         raise Error("invalid_database_path")
@@ -173,9 +173,9 @@ def connect(path, create=True):
             # A concurrent creator owns that path; never reinterpret its database.
             descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
             os.close(descriptor)
-    # A read must not recreate a store removed after the existence check.
-    target = path if create else path.as_uri() + "?mode=ro"
-    db = sqlite3.connect(target, timeout=5, uri=not create)
+    # Only explicit initialization reserves new files; opens never recreate a removed store.
+    target = path.as_uri() + ("?mode=rw" if create else "?mode=ro")
+    db = sqlite3.connect(target, timeout=5, uri=True)
     try:
         if fresh:
             # This database is toolkit-owned. Do not reinterpret an existing arbitrary SQLite file.
@@ -306,7 +306,8 @@ def run(args):
     scope = namespace(args.scope)
     # Reject invalid/private records before creating a database or modifying consent.
     value = load(args.input) if args.command in {"add", "update"} else None
-    db = connect(args.db, create=args.command not in {"status", "search", "get", "export", "context", "timeline"})
+    db = connect(args.db, create=args.command not in {"status", "search", "get", "export", "context", "timeline"},
+                 initialize=args.command == "grant")
     try:
         with db:
             if args.command == "grant":
