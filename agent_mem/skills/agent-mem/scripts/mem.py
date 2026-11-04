@@ -97,7 +97,7 @@ def record(value):
         item = value[key]
         if not isinstance(item, str) or not item.strip() or len(item) > maximum:
             raise Error("invalid_record_value")
-        if re.search(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", item):
+        if re.search(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]", item):
             raise Error("invalid_control_character")
         try:
             item.encode("utf-8")

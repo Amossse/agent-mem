@@ -24,6 +24,13 @@ EXAMPLE = {"kind": "preference", "title": "学习卡片格式",
 
 
 class MemoryLoop(unittest.TestCase):
+    def test_c1_controls_are_rejected_in_memory_records(self):
+        runtime = runpy.run_path(str(REPO / "agent_mem/skills/agent-mem/scripts/mem.py"))
+        for code in (0x80, 0x85, 0x9F):
+            with self.assertRaisesRegex(runtime["Error"], "invalid_control_character"):
+                runtime["record"]({**EXAMPLE, "body": "Fictional" + chr(code) + "note"})
+        self.assertEqual(runtime["record"](EXAMPLE)["body"], EXAMPLE["body"])
+
     def test_mutations_cannot_initialize_an_absent_store(self):
         with tempfile.TemporaryDirectory() as directory:
             store = Path(directory).resolve() / "absent/memory.sqlite3"

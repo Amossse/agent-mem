@@ -145,6 +145,9 @@ an OS sandbox or protection against a hostile local process racing filesystem op
 
 ## Privacy and limits
 
+
+Memory records reject C1 controls in addition to the existing control-character checks.
+
 Only `grant` initializes a missing store. `add`, `update` and `forget` fail with `database_missing` without creating a database or parent directories. Existing writable stores open with SQLite `mode=rw` so removal between inspection and open cannot recreate them. Verify the intended path and human authorization before initialization; this is not authentication or a hostile-filesystem sandbox.
 
 Custom installation targets must end in `agent-mem`, matching the bundled Skill name. Invalid names fail before creating parent directories; correct custom targets remain installable and repeatable. This validates packaging, not discovery or automatic invocation by a host.

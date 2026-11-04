@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Memory records reject C1 controls in addition to the existing control-character checks.
+
 - Restrict missing-store initialization to grant. Reject add/update/forget without creating directories, and open writable stores with mode=rw to prevent recreation after removal. Cover refusal and subsequent authorized initialization; consent boundaries remain unchanged.
 
 - Reject custom installation folders whose name is not agent-mem before creating directories. Cover non-echoing refusal, a valid retry, idempotence and the installed script's help entry point.
