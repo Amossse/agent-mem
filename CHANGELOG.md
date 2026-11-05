@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Installation checks filenames before comparing bundled content and caps comparison reads at the expected size plus one byte.
+
 - Memory records reject C1 controls in addition to the existing control-character checks.
 
 - Restrict missing-store initialization to grant. Reject add/update/forget without creating directories, and open writable stores with mode=rw to prevent recreation after removal. Cover refusal and subsequent authorized initialization; consent boundaries remain unchanged.

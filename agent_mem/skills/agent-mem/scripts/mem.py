@@ -281,10 +281,21 @@ def install(workspace, agent, custom=None):
         if target.name != "agent-mem":
             raise Error("invalid_skill_directory_name")
         if target.exists():
-            actual = {str(p.relative_to(target)).replace(os.sep, "/"): p.read_bytes()
-                      for p in target.rglob("*") if p.is_file() and not p.is_symlink()}
-            if any(p.is_symlink() for p in target.rglob("*")) or actual != files:
+            entries = set()
+            for path in target.rglob("*"):
+                if path.is_symlink():
+                    raise Error("existing_skill_conflict")
+                if not path.is_dir():
+                    entries.add(path.relative_to(target).as_posix())
+            if entries != files.keys():
                 raise Error("existing_skill_conflict")
+            for name, expected in files.items():
+                path = target / name
+                if not path.is_file() or path.stat().st_size != len(expected):
+                    raise Error("existing_skill_conflict")
+                with path.open("rb") as stream:
+                    if stream.read(len(expected) + 1) != expected:
+                        raise Error("existing_skill_conflict")
     results = []
     for target in destinations:
         if not target.exists():

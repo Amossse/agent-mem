@@ -145,6 +145,8 @@ an OS sandbox or protection against a hostile local process racing filesystem op
 
 ## Privacy and limits
 
+Installation checks filenames before comparing bundled content and caps comparison reads at the expected size plus one byte.
+
 
 Memory records reject C1 controls in addition to the existing control-character checks.
 

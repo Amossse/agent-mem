@@ -24,6 +24,26 @@ EXAMPLE = {"kind": "preference", "title": "学习卡片格式",
 
 
 class MemoryLoop(unittest.TestCase):
+    def test_install_does_not_read_unexpected_files(self):
+        runtime = runpy.run_path(str(REPO / "agent_mem/skills/agent-mem/scripts/mem.py"))
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            target = root / "agent-mem"
+            target.mkdir()
+            extra = target / "fictional-extra.txt"
+            extra.write_bytes(b"fictional")
+            open_file = Path.open
+
+            def reject_extra_read(path, *args, **kwargs):
+                if path == extra:
+                    self.fail("installation read an unexpected file")
+                return open_file(path, *args, **kwargs)
+
+            with patch.object(Path, "open", reject_extra_read):
+                with self.assertRaisesRegex(runtime["Error"], "existing_skill_conflict"):
+                    runtime["install"](root, "generic", target)
+            self.assertEqual(extra.read_bytes(), b"fictional")
+
     def test_c1_controls_are_rejected_in_memory_records(self):
         runtime = runpy.run_path(str(REPO / "agent_mem/skills/agent-mem/scripts/mem.py"))
         for code in (0x80, 0x85, 0x9F):
