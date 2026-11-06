@@ -24,6 +24,30 @@ EXAMPLE = {"kind": "preference", "title": "学习卡片格式",
 
 
 class MemoryLoop(unittest.TestCase):
+    def test_install_checks_the_opened_bundle_file_type(self):
+        runtime = runpy.run_path(str(REPO / "agent_mem/skills/agent-mem/scripts/mem.py"))
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory).resolve()
+            target = root / "agent-mem"
+            runtime["install"](root, "generic", target)
+            before = {p.relative_to(root): p.read_bytes() for p in root.rglob("*") if p.is_file()}
+            opened, open_file = [], os.open
+
+            def track_open(*args, **kwargs):
+                descriptor = open_file(*args, **kwargs)
+                opened.append(descriptor)
+                return descriptor
+
+            with patch.object(os, "open", side_effect=track_open), \
+                    patch.object(os, "fstat", return_value=SimpleNamespace(st_mode=stat.S_IFIFO, st_size=1)):
+                with self.assertRaisesRegex(runtime["Error"], "existing_skill_conflict"):
+                    runtime["install"](root, "generic", target)
+            self.assertEqual(len(opened), 1)
+            with self.assertRaises(OSError):
+                os.fstat(opened[0])
+            self.assertEqual(before, {p.relative_to(root): p.read_bytes() for p in root.rglob("*") if p.is_file()})
+            runtime["install"](root, "generic", target)
+
     def test_install_does_not_read_unexpected_files(self):
         runtime = runpy.run_path(str(REPO / "agent_mem/skills/agent-mem/scripts/mem.py"))
         with tempfile.TemporaryDirectory() as directory:

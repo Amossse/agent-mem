@@ -291,11 +291,17 @@ def install(workspace, agent, custom=None):
                 raise Error("existing_skill_conflict")
             for name, expected in files.items():
                 path = target / name
-                if not path.is_file() or path.stat().st_size != len(expected):
-                    raise Error("existing_skill_conflict")
-                with path.open("rb") as stream:
-                    if stream.read(len(expected) + 1) != expected:
+                flags = os.O_RDONLY | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_BINARY", 0)
+                descriptor = os.open(path, flags)
+                try:
+                    metadata = os.fstat(descriptor)
+                    if not stat.S_ISREG(metadata.st_mode) or metadata.st_size != len(expected):
                         raise Error("existing_skill_conflict")
+                    with os.fdopen(descriptor, "rb", closefd=False) as stream:
+                        if stream.read(len(expected) + 1) != expected:
+                            raise Error("existing_skill_conflict")
+                finally:
+                    os.close(descriptor)
     results = []
     for target in destinations:
         if not target.exists():

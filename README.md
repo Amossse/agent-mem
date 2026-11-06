@@ -145,6 +145,8 @@ an OS sandbox or protection against a hostile local process racing filesystem op
 
 ## Privacy and limits
 
+Existing installation comparisons inspect the opened file descriptor and use nonblocking, bounded reads. A changed file type or size produces an installation conflict.
+
 Installation checks filenames before comparing bundled content and caps comparison reads at the expected size plus one byte.
 
 
