@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Search and context reject NUL, DEL, C1 and other disallowed control characters before tokenization. Newlines and tabs remain valid separators; malformed queries do not silently broaden SQLite matches.
+
 - Existing installation comparisons inspect the opened file descriptor and use nonblocking, bounded reads. A changed file type or size produces an installation conflict.
 
 - Installation checks filenames before comparing bundled content and caps comparison reads at the expected size plus one byte.

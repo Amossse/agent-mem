@@ -9,6 +9,8 @@ procedures. Compatible hosts share a SQLite file and a namespace instead of keep
 
 [中文](README.zh-CN.md) · [Skill](agent_mem/skills/agent-mem/SKILL.md) · [Security](SECURITY.md)
 
+Search and context reject NUL, DEL, C1 and other disallowed control characters before tokenization. Newlines and tabs remain valid separators; malformed queries do not silently broaden SQLite matches.
+
 ## Quick start
 
 Python 3.10+ is required. No runtime dependencies, API keys, server, or model downloads.

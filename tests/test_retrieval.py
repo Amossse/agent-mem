@@ -15,6 +15,36 @@ from test_memory import EXAMPLE, SCRIPT
 
 
 class Retrieval(unittest.TestCase):
+    def test_control_queries_do_not_broaden_recall(self):
+        runtime = runpy.run_path(str(SCRIPT.parent / "skills/agent-mem/scripts/mem.py"))
+        with tempfile.TemporaryDirectory() as directory:
+            store = Path(directory).resolve() / "memory.sqlite3"
+            with closing(runtime["connect"](store)) as db:
+                with db:
+                    db.execute("INSERT INTO grants VALUES(?,?,?)", ("study", "approve", runtime["now"]()))
+                    db.execute("INSERT INTO memories VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                               ("a" * 32, "study", "fact", "Fictional note", "Fictional observation",
+                                "Fictional source", "demo", None, 1, runtime["now"](), runtime["now"]()))
+                before = store.read_bytes()
+                for query in ("\x00missing", "Fictional\x7f", "Fictional\x85"):
+                    for command in ("search", "context"):
+                        with self.subTest(query=repr(query), command=command):
+                            with self.assertRaisesRegex(runtime["Error"], "invalid_search_query"):
+                                if command == "search":
+                                    runtime[command](db, "study", query, 5)
+                                else:
+                                    runtime[command](db, "study", query, 5, 4000)
+                self.assertEqual(len(runtime["search"](db, "study", "Fictional\nobservation", 5)), 1)
+                for command in ("search", "context"):
+                    result = subprocess.run([sys.executable, str(SCRIPT), "--db", str(store),
+                                             "--scope", "study", command, "Fictional\x7fmarker"],
+                                            capture_output=True)
+                    self.assertEqual(result.returncode, 2)
+                    self.assertEqual(json.loads(result.stderr)["error"], "invalid_search_query")
+                    self.assertNotIn(b"Fictional", result.stderr)
+                    self.assertEqual(result.stdout, b"")
+                self.assertEqual(store.read_bytes(), before)
+
     def test_layered_retrieval_uses_one_expiry_cutoff(self):
         runtime = runpy.run_path(str(SCRIPT.parent / "skills/agent-mem/scripts/mem.py"))
         before, expiry, after = ("2030-01-01T00:00:00+00:00", "2030-01-01T00:00:01+00:00",

@@ -210,6 +210,9 @@ def item(db, scope, identifier, include_expired=False, as_of=None):
 
 
 def search(db, scope, query, limit, as_of=None):
+    # SQLite LIKE stops at NUL; reject controls before tokenizing to avoid broad matches.
+    if re.search(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f-\x9f]", query):
+        raise Error("invalid_search_query")
     if not 1 <= limit <= 50 or len(query) > 500 or len(query.split()) > 10:
         raise Error("invalid_search_bounds")
     try:
